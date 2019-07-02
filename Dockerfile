@@ -12,6 +12,6 @@ RUN dotnet publish -c Release -o out
 # Build runtime image
 FROM mcr.microsoft.com/dotnet/core/aspnet:2.2
 WORKDIR /app
-COPY --from=build-env /app/single_word_core_bot/out .
+COPY --from=build-env /app/SigneWordBotAspCore/out .
 # ENTRYPOINT ["dotnet", "aspnetapp.dll"]
-CMD dotnet single_word_core_bot.dll
+CMD ASPNETCORE_URLS=http://*:$PORT dotnet SigneWordBotAspCore.dll

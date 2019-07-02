@@ -6,5 +6,6 @@ namespace SigneWordBotAspCore.Services
     public interface IUpdateService
     {
         Task EchoAsync(Update update);
+        Task DoCommand(Update update);
     }
 }

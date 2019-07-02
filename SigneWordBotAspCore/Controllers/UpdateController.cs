@@ -1,10 +1,28 @@
 ﻿using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using SigneWordBotAspCore.Services;
+using Telegram.Bot.Types;
+
 namespace SigneWordBotAspCore.Controllers
 {
-    public class UpdateController
+    [Route("api/[controller]")]
+    public class UpdateController : Controller
     {
-        public UpdateController()
+        private readonly IUpdateService _updateService;
+
+        public UpdateController(IUpdateService updateService)
         {
+            _updateService = updateService;
+        }
+
+        // POST api/update
+        [HttpPost]
+        public async Task<IActionResult> Post([FromBody]Update update)
+        {
+            await _updateService.DoCommand(update);
+            await _updateService.EchoAsync(update);
+            return Ok();
         }
     }
 }

@@ -30,6 +30,7 @@ namespace SigneWordBotAspCore
             services.AddSingleton<IBotService, BotService>();
 
             services.AddScoped<IUpdateService, UpdateService>();
+            System.Console.WriteLine("ConfigureServices end");
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -38,15 +39,19 @@ namespace SigneWordBotAspCore
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                System.Console.WriteLine("Use Developer Exception Page");
+
             }
             else
             {
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
+                System.Console.WriteLine("Use hsts");
+
             }
 
-            app.UseHttpsRedirection();
             app.UseMvc();
+
         }
     }
 }
