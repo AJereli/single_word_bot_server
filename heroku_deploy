@@ -1,0 +1,5 @@
+docker build -t single_word_bot .
+docker tag single_word_bot registry.heroku.com/single-word-server/web
+docker push registry.heroku.com/single-word-server/web
+heroku container:push web -a single-word-server
+heroku container:release web -a single-word-server
