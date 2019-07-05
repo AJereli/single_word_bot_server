@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using SigneWordBotAspCore.Service;
 using Telegram.Bot;
 
 namespace SigneWordBotAspCore.Services
@@ -7,6 +6,9 @@ namespace SigneWordBotAspCore.Services
     public class BotService : IBotService
     {
         private readonly IAppContext appContext;
+
+        public TelegramBotClient Client { get; }
+
 
         public BotService(IAppContext appContext)
         {
@@ -17,6 +19,5 @@ namespace SigneWordBotAspCore.Services
             Client.SetWebhookAsync("https://single-word-server.herokuapp.com/api/update").Wait();
         }
 
-        public TelegramBotClient Client { get; }
     }
 }

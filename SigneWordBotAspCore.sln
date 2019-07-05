@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SigneWordBotAspCore", "SigneWordBotAspCore\SigneWordBotAspCore.csproj", "{A563FBD9-1C06-49E3-8070-5F7BFF81991F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SingleWordUnitTest", "SingleWordUnitTest\SingleWordUnitTest.csproj", "{87BE7522-78FC-4417-AB4F-B9E9C754EAF4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -13,5 +15,9 @@ Global
 		{A563FBD9-1C06-49E3-8070-5F7BFF81991F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A563FBD9-1C06-49E3-8070-5F7BFF81991F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A563FBD9-1C06-49E3-8070-5F7BFF81991F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87BE7522-78FC-4417-AB4F-B9E9C754EAF4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87BE7522-78FC-4417-AB4F-B9E9C754EAF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87BE7522-78FC-4417-AB4F-B9E9C754EAF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87BE7522-78FC-4417-AB4F-B9E9C754EAF4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

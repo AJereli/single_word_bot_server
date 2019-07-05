@@ -27,10 +27,13 @@ namespace SigneWordBotAspCore
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            
+            services.AddSingleton<IAppContext, Services.AppContext>();
+            services.AddSingleton<IDataBaseService, DataBaseService>();
+
             services.AddSingleton<IBotService, BotService>();
 
             services.AddScoped<IUpdateService, UpdateService>();
-            System.Console.WriteLine("ConfigureServices end");
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

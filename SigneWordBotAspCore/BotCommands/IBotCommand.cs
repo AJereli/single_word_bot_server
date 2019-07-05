@@ -5,7 +5,7 @@ using Telegram.Bot.Types;
 
 namespace SigneWordBotAspCore.BotCommands
 {
-    public interface IBotCommand
+    public interface IBotCommand: IBotSqlCommand
     {
         string Name { get; }
         Task Execute(Message message, TelegramBotClient client);

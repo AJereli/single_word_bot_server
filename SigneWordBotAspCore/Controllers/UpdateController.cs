@@ -22,6 +22,7 @@ namespace SigneWordBotAspCore.Controllers
         {
             await _updateService.DoCommand(update);
             await _updateService.EchoAsync(update);
+
             return Ok();
         }
     }

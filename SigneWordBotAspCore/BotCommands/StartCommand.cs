@@ -6,25 +6,29 @@ using Telegram.Bot.Types;
 
 namespace SigneWordBotAspCore.BotCommands
 {
-    public class HelpCommand: IBotCommand
+    public class StartCommand: IBotCommand
     {
-        public HelpCommand()
-        {
-        }
 
-        public string Name => "/help";
+        public string Name => "/start";
 
         public async Task Execute(Message message, TelegramBotClient client)
         {
             var chatId = message.Chat.Id;
-            await client.SendTextMessageAsync(chatId,
-                "/help for show this message\n" +
-                "/start for creating account\n" +
-                "/login for signin\n",
-                parseMode: Telegram.Bot.Types.Enums.ParseMode.Markdown);
+
+            try
+            {
+                await client.SendTextMessageAsync(chatId,
+               "Enter password general password for your main basket of passwords.",
+               parseMode: Telegram.Bot.Types.Enums.ParseMode.Default);
+            }catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+           
 
         }
 
+       
         public Task ExecuteSql(Message message, TelegramBotClient client, IDataBaseService dbService)
         {
             throw new NotImplementedException();
