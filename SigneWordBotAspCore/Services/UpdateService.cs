@@ -8,6 +8,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using SigneWordBotAspCore.States;
 using System;
+using Newtonsoft.Json;
 
 namespace SigneWordBotAspCore.Services
 {
@@ -32,7 +33,9 @@ namespace SigneWordBotAspCore.Services
             BotCommands = new List<IBotCommand> {
                 new HelpCommand(),
                 new StartCommand(),
-                new EnterPasswordCommand()
+                new CreateCredentialsCommand(),
+                new EnterPasswordCommand(),
+                new EnterCredentialsCommand(),
             };
 
             StateForChaId = new Dictionary<long, UserStartState>();
@@ -41,34 +44,7 @@ namespace SigneWordBotAspCore.Services
             NameCommandDict = BotCommands.ToDictionary(c => c.Name, c => c);
         }
 
-        private bool IsTextMessage(Update update) {
-            if (update == null || update.Message == null) return false;
 
-            return update.Message.Type == MessageType.Text;
-
-        }
-
-
-        private bool IsValidUpdateCommand(Update update)
-        {
-            if (update == null || update.Message == null) return false;
-
-            if (update.Message.Type != MessageType.Text)
-                return false;
-            
-            var message = update.Message.Text;
-
-            //TODO: Make partial command support
-            if (!NameCommandDict.ContainsKey(message))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-
-        string PreviusCommand { get; set; } = null;
 
         public async Task DoCommand(Update update)
         {
@@ -77,36 +53,48 @@ namespace SigneWordBotAspCore.Services
                         update.Message.Chat.Id, $"Unsupported command");
                 return;
             }
-            else
+
+
+            var message = update.Message;
+
+            await TryExecuteStateMachineCommand(message);
+
+            await TryExecuteMainCommand(update);
+
+        }
+
+        private async Task TryExecuteStateMachineCommand(Message message)
+        {
+            if (!StateForChaId.ContainsKey(message.Chat.Id))
             {
-                //PreviusCommand = update
-                var msg = update.Message;
-                if (StateForChaId.ContainsKey(msg.Chat.Id))
-                {
-                    var state = StateForChaId[msg.Chat.Id];
-                    switch (state)
-                    {
-                        case UserStartState.WaitPassword:
-                            try
-                            {
-                                var pendnigCommand = NameCommandDict["EnterPasswordCommand"];
-                                await pendnigCommand.ExecuteSql(msg, _botService.Client, dataBaseService);
-                                break;
-                            }
-                            catch (Exception ex)
-                            {
-                                break;
-                            }
-                    }
-
-                    StateForChaId.Remove(msg.Chat.Id);
-                    return;
-                }
-
+                return;
             }
-                
 
-            if (!IsValidUpdateCommand(update) ) {
+            var state = StateForChaId[message.Chat.Id];
+
+            switch (state)
+            {
+                case UserStartState.WaitPassword:
+                    var pendnigCommand = NameCommandDict["EnterPasswordCommand"];
+                    await pendnigCommand.ExecuteSql(message, _botService.Client, dataBaseService);
+                    break;
+
+                case UserStartState.WaitCredentials:
+                    var pendingCommand = NameCommandDict["EnterCredentialsCommand"];
+                    await pendingCommand.ExecuteSql(message, _botService.Client, dataBaseService);
+                    break;
+
+                case UserStartState.None:
+                    break;
+            }
+
+            StateForChaId.Remove(message.Chat.Id);
+        }
+
+        private async Task TryExecuteMainCommand(Update update)
+        {
+            if (!IsValidUpdateCommand(update))
+            {
                 await _botService.Client.SendTextMessageAsync(
                         update.Message.Chat.Id, $"Unsupported command2");
                 return;
@@ -114,19 +102,25 @@ namespace SigneWordBotAspCore.Services
             var message = update.Message;
 
             var command = NameCommandDict[message.Text];
-            if (command.Name == "/start")
+
+            if (command.AfterState != UserStartState.None)
             {
-                StateForChaId.Add(message.Chat.Id, UserStartState.WaitPassword);
-
-                System.Console.WriteLine($"start init: {StateForChaId[message.Chat.Id]}");
+                StateForChaId.Add(message.Chat.Id, command.AfterState);
             }
-
+            
             await command.Execute(message, _botService.Client);
+
 
         }
 
+
         public async Task EchoAsync(Update update)
         {
+            string json = JsonConvert.SerializeObject(update);
+
+            System.Console.WriteLine(json);
+            _logger.LogInformation(json);
+
             if (update.Type != UpdateType.Message)
             {
                 return;
@@ -139,7 +133,7 @@ namespace SigneWordBotAspCore.Services
             if (message.Type == MessageType.Text)
             {
                 // Echo each Message
-                await _botService.Client.SendTextMessageAsync(message.Chat.Id, "test: " + message.Text);
+                await _botService.Client.SendTextMessageAsync(message.Chat.Id, "test: \n" + json);
             }
             else if (message.Type == MessageType.Photo)
             {
@@ -156,6 +150,33 @@ namespace SigneWordBotAspCore.Services
 
                 await _botService.Client.SendTextMessageAsync(message.Chat.Id, "Thx for the Pics");
             }
+        }
+
+        private bool IsTextMessage(Update update)
+        {
+            if (update == null || update.Message == null) return false;
+
+            return update.Message.Type == MessageType.Text;
+
+        }
+
+
+        private bool IsValidUpdateCommand(Update update)
+        {
+            if (update == null || update.Message == null) return false;
+
+            if (update.Message.Type != MessageType.Text)
+                return false;
+
+            var message = update.Message.Text;
+
+            //TODO: Make partial command support
+            if (!NameCommandDict.ContainsKey(message))
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }

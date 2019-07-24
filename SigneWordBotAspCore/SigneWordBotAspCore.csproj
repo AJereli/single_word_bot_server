@@ -10,11 +10,14 @@
     <PackageReference Include="Microsoft.AspNetCore.Razor.Design" Version="2.2.0" PrivateAssets="All" />
     <PackageReference Include="Telegram.Bot" Version="14.12.0" />
     <PackageReference Include="Npgsql" Version="4.0.7" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <PackageReference Include="FastMember" Version="1.5.0" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Services\" />
     <Folder Include="BotCommands\" />
     <Folder Include="States\" />
+    <Folder Include="Models\" />
   </ItemGroup>
 </Project>

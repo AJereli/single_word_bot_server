@@ -7,7 +7,8 @@ using Telegram.Bot.Types;
 namespace SigneWordBotAspCore.Controllers
 {
     [Route("api/[controller]")]
-    public class UpdateController : Controller
+    [ApiController]
+    public class UpdateController : ControllerBase
     {
         private readonly IUpdateService _updateService;
 
@@ -20,9 +21,11 @@ namespace SigneWordBotAspCore.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody]Update update)
         {
+            
             await _updateService.DoCommand(update);
+#if !DEBUG
             await _updateService.EchoAsync(update);
-
+#endif
             return Ok();
         }
     }

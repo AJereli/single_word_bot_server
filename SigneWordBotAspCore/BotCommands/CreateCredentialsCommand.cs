@@ -7,12 +7,17 @@ using Telegram.Bot.Types;
 
 namespace SigneWordBotAspCore.BotCommands
 {
-    public class StartCommand: IBotCommand
+    public class CreateCredentialsCommand: IBotCommand
     {
+        public CreateCredentialsCommand()
+        {
+        }
 
-        public string Name => "/start";
 
-        public UserStartState AfterState => UserStartState.WaitPassword;
+
+        public string Name => "/createCredentials";
+
+        public UserStartState AfterState => UserStartState.WaitCredentials;
 
         public async Task Execute(Message message, TelegramBotClient client)
         {
@@ -23,7 +28,8 @@ namespace SigneWordBotAspCore.BotCommands
 #if DEBUG
                 Console.WriteLine("Enter password general password for your main basket of passwords.");
             }
-            finally {
+            finally
+            {
             }
 #else
                 await client.SendTextMessageAsync(chatId,
@@ -36,7 +42,6 @@ namespace SigneWordBotAspCore.BotCommands
 #endif
         }
 
-       
         public Task ExecuteSql(Message message, TelegramBotClient client, IDataBaseService dbService)
         {
             throw new NotImplementedException();

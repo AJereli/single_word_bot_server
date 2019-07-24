@@ -3,6 +3,9 @@ namespace SigneWordBotAspCore.States
 {
     public enum UserStartState
     {
-        WaitPassword
+        None,
+        WaitPassword,
+        WaitCredentials,
+
     }
 }

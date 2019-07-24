@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using SigneWordBotAspCore.Services;
+using SigneWordBotAspCore.States;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -11,6 +12,8 @@ namespace SigneWordBotAspCore.BotCommands
 
         public string Name => "EnterPasswordCommand";
 
+        public UserStartState AfterState => UserStartState.None;
+
         public Task Execute(Message message, TelegramBotClient client)
         {
             throw new NotImplementedException();
@@ -20,11 +23,14 @@ namespace SigneWordBotAspCore.BotCommands
         {
             var res = dbService.CreateUser(message.Text, message.Chat.Id);
 
-            if (res)
+            if (res != -1)
             {
                 await client.SendTextMessageAsync(message.Chat.Id,
                     "Your password created successful\n"+
-                    "Now you can user /createCredential command now");
+                    "Now you can user /createCredentials command now" +
+                    "Use this template for credentials sending:" +
+                    "<login>" +
+                    "<password>");
             }
 
         }

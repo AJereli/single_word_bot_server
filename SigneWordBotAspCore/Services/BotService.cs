@@ -16,7 +16,7 @@ namespace SigneWordBotAspCore.Services
 
             Client = new TelegramBotClient(appContext.BotToken);
             System.Console.WriteLine("Client was created");
-            Client.SetWebhookAsync("https://single-word-server.herokuapp.com/api/update").Wait();
+            //Client.SetWebhookAsync("https://single-word-server.herokuapp.com/api/update").Wait();
         }
 
     }

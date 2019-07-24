@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using SigneWordBotAspCore.Services;
+using SigneWordBotAspCore.States;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -13,6 +14,8 @@ namespace SigneWordBotAspCore.BotCommands
         }
 
         public string Name => "/help";
+
+        public UserStartState AfterState => UserStartState.None;
 
         public async Task Execute(Message message, TelegramBotClient client)
         {

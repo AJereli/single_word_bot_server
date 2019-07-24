@@ -33,7 +33,7 @@ namespace SigneWordBotAspCore
 
             services.AddSingleton<IBotService, BotService>();
 
-            services.AddScoped<IUpdateService, UpdateService>();
+            services.AddSingleton<IUpdateService, UpdateService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
