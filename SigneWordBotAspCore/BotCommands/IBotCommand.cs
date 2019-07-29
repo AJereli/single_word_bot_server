@@ -10,7 +10,7 @@ namespace SigneWordBotAspCore.BotCommands
     {
         string Name { get; }
         Task Execute(Message message, TelegramBotClient client);
-        UserStartState AfterState { get; }
+        UserNextState AfterState { get; }
 
     }
 }

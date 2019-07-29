@@ -12,7 +12,7 @@ namespace SigneWordBotAspCore.BotCommands
 
         public string Name => "EnterPasswordCommand";
 
-        public UserStartState AfterState => UserStartState.None;
+        public UserNextState AfterState => UserNextState.None;
 
         public Task Execute(Message message, TelegramBotClient client)
         {

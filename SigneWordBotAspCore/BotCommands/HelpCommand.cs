@@ -15,7 +15,7 @@ namespace SigneWordBotAspCore.BotCommands
 
         public string Name => "/help";
 
-        public UserStartState AfterState => UserStartState.None;
+        public UserNextState AfterState => UserNextState.None;
 
         public async Task Execute(Message message, TelegramBotClient client)
         {

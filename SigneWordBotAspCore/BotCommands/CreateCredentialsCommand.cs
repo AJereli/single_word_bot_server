@@ -17,7 +17,7 @@ namespace SigneWordBotAspCore.BotCommands
 
         public string Name => "/createCredentials";
 
-        public UserStartState AfterState => UserStartState.WaitCredentials;
+        public UserNextState AfterState => UserNextState.WaitCredentials;
 
         public async Task Execute(Message message, TelegramBotClient client)
         {

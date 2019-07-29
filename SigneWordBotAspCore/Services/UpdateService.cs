@@ -20,8 +20,8 @@ namespace SigneWordBotAspCore.Services
 
         private List<IBotCommand> BotCommands { get; set; }
 
-        private Dictionary<string, IBotCommand> NameCommandDict { get; set; }
-        private Dictionary<long, UserStartState> StateForChaId { get; set; }
+        private Dictionary<string, IBotCommand> NameCommandDict { get; }
+        private Dictionary<long, UserNextState> StateForChaId { get; }
 
         public UpdateService(IBotService botService, ILogger<UpdateService> logger, IDataBaseService dataBaseService)
         {
@@ -31,14 +31,14 @@ namespace SigneWordBotAspCore.Services
             this.dataBaseService = dataBaseService;
 
             BotCommands = new List<IBotCommand> {
-                new HelpCommand(),
-                new StartCommand(),
+                new HelpCommand(), 
+                // new StartCommand(),
                 new CreateCredentialsCommand(),
                 new EnterPasswordCommand(),
                 new EnterCredentialsCommand(),
             };
 
-            StateForChaId = new Dictionary<long, UserStartState>();
+            StateForChaId = new Dictionary<long, UserNextState>();
             NameCommandDict = new Dictionary<string, IBotCommand>();
 
             NameCommandDict = BotCommands.ToDictionary(c => c.Name, c => c);
@@ -74,17 +74,17 @@ namespace SigneWordBotAspCore.Services
 
             switch (state)
             {
-                case UserStartState.WaitPassword:
+                case UserNextState.WaitPassword:
                     var pendnigCommand = NameCommandDict["EnterPasswordCommand"];
                     await pendnigCommand.ExecuteSql(message, _botService.Client, dataBaseService);
                     break;
 
-                case UserStartState.WaitCredentials:
+                case UserNextState.WaitCredentials:
                     var pendingCommand = NameCommandDict["EnterCredentialsCommand"];
                     await pendingCommand.ExecuteSql(message, _botService.Client, dataBaseService);
                     break;
 
-                case UserStartState.None:
+                case UserNextState.None:
                     break;
             }
 
@@ -103,7 +103,7 @@ namespace SigneWordBotAspCore.Services
 
             var command = NameCommandDict[message.Text];
 
-            if (command.AfterState != UserStartState.None)
+            if (command.AfterState != UserNextState.None)
             {
                 StateForChaId.Add(message.Chat.Id, command.AfterState);
             }

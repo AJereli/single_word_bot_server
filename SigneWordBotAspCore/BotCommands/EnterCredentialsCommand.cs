@@ -12,7 +12,7 @@ namespace SigneWordBotAspCore.BotCommands
         public EnterCredentialsCommand()
         {
         }
-        public UserStartState AfterState => UserStartState.None;
+        public UserNextState AfterState => UserNextState.None;
 
         public string Name => "EnterCredentialsCommand";
 
