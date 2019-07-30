@@ -10,11 +10,10 @@ namespace SigneWordBotAspCore.BotCommands
     public class StartCommand: AbstractBotCommand
     {
 
-        private readonly IDataBaseService dbService;
-        
-        public StartCommand(IDataBaseService dbService)
+        public StartCommand()
         {
-            this.dbService = dbService;
+            _name = "/start";
+            _nextState = UserNextState.WaitPassword;
         }
 
         public UserNextState AfterState => UserNextState.WaitPassword;
@@ -40,11 +39,6 @@ namespace SigneWordBotAspCore.BotCommands
             }
 #endif
         }
-
-       
-        public Task ExecuteSql(Message message, TelegramBotClient client, IDataBaseService dbService)
-        {
-            throw new NotImplementedException();
-        }
+        
     }
 }

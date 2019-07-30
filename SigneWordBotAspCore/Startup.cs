@@ -40,16 +40,11 @@ namespace SigneWordBotAspCore
             services.AddSingleton<IDataBaseService>(dbService);
             services.AddSingleton<IBotService, BotService>();
             services.AddSingleton<IUpdateService, UpdateService>();
+            services.AddSingleton<ICommandsService, CommandsService>();
             
             
             
-            
-            var builder = new ContainerBuilder();
-            builder.RegisterType<DataBaseService>().As<IDataBaseService>();
-            ConfigureContainer(builder);
-            
-            
-            ApplicationContainer = builder.Build();
+       
 
             return new AutofacServiceProvider(ApplicationContainer);
         }

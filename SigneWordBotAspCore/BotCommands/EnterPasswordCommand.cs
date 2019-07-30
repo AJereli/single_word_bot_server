@@ -7,21 +7,21 @@ using Telegram.Bot.Types;
 
 namespace SigneWordBotAspCore.BotCommands
 {
-    public class EnterPasswordCommand: IBotCommand
+    public class EnterPasswordCommand: AbstractBotCommand
     {
 
-        public string Name => "EnterPasswordCommand";
-
-        public UserNextState AfterState => UserNextState.None;
-
-        public Task Execute(Message message, TelegramBotClient client)
+        private readonly IDataBaseService _dataBaseService;
+        
+        public EnterPasswordCommand(IDataBaseService dataBaseService)
         {
-            throw new NotImplementedException();
+            _dataBaseService = dataBaseService;
+
+            _name = "EnterPasswordCommand";
         }
 
-        public async Task ExecuteSql(Message message, TelegramBotClient client, IDataBaseService dbService)
+        public override async Task Execute(Message message, TelegramBotClient client)
         {
-            var res = dbService.CreateUser(message.Text, message.Chat.Id);
+            var res = _dataBaseService.CreateUser(message.Text, message.Chat.Id);
 
             if (res != -1)
             {
@@ -32,7 +32,8 @@ namespace SigneWordBotAspCore.BotCommands
                     "<login>" +
                     "<password>");
             }
-
         }
+
+        
     }
 }

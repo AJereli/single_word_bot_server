@@ -21,4 +21,10 @@
     <Folder Include="States\" />
     <Folder Include="Models\" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="BotCommands\IBotCommand.cs" />
+    <Compile Remove="BotCommands\IBotSqlCommand.cs" />
+    <Compile Remove="BotCommands\ICreateCredentials.cs" />
+  </ItemGroup>
 </Project>

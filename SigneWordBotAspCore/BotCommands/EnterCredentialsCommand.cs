@@ -7,21 +7,19 @@ using Telegram.Bot.Types;
 
 namespace SigneWordBotAspCore.BotCommands
 {
-    public class EnterCredentialsCommand: IBotCommand
+    internal sealed class EnterCredentialsCommand: AbstractBotCommand
     {
-        public EnterCredentialsCommand()
+        private readonly IDataBaseService _dataBaseService;
+        
+        public EnterCredentialsCommand(IDataBaseService dbService)
         {
+            _name = "EnterCredentialsCommand";
+
+            _dataBaseService = dbService;
         }
-        public UserNextState AfterState => UserNextState.None;
+        
 
-        public string Name => "EnterCredentialsCommand";
-
-        public Task Execute(Message message, TelegramBotClient client)
-        {
-            throw new NotImplementedException();
-        }
-
-        public async Task ExecuteSql(Message message, TelegramBotClient client, IDataBaseService dbService)
+        public override async Task Execute(Message message, TelegramBotClient client)
         {
             var credentials = message.Text.Split('\n');
             var login = credentials[0];
