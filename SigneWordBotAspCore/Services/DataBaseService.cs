@@ -84,32 +84,65 @@ namespace SigneWordBotAspCore.Services
         //TODO: validation for name repeating
         public int CreateBasket(long userId, string name, string basketPass = null, string description = null)
         {
-            int res = -1;
+            int basketId = -1;
+            int relationId = -1;
+            
             string cryptedPass = null;
             
             if (name.Length > 512)
-                return res;
+                return basketId;
             
             //TODO: 1024 chars limit for result pass
             cryptedPass = EncryptString(basketPass);
 
             var sqlParams = new NpgsqlParameter[]
             {
-                new NpgsqlParameter<long>("user_id", userId),
                 new NpgsqlParameter<string>("name", name), 
                 new NpgsqlParameter<string>("basket_pass", cryptedPass),
                 new NpgsqlParameter<string>("description", description)
                 
             };
 
-            string query = @"INSERT INTO public.passwords_basket 
-                            (user_id, name, basket_pass, description) 
-                            VALUES (@user_id, @name, @basket_pass, @description) 
+            const string query = @"INSERT INTO public.passwords_basket 
+                            (name, basket_pass, description) 
+                            VALUES (@name, @basket_pass, @description) 
                             RETURNING id;";
 
-            res = Insert(query, sqlParams);
+            using (var transaction = connection.BeginTransaction())
+            {
+                try
+                {
+                    basketId = Insert(query, sqlParams);
 
-            return res;
+                    if (basketId == -1)
+                    {
+                        transaction.Rollback();
+                        return -1;
+                    }
+
+                    var relationsQueryParams = new NpgsqlParameter[]
+                    {
+                        new NpgsqlParameter<long>("user_id", userId),
+                        new NpgsqlParameter<int>("basket_id", basketId),
+                        new NpgsqlParameter<int>("access_type_id", (int) AccessType.Owner),
+                    };
+                    const string relationsInsertQuery = @"INSERT INTO user_basket 
+                                                    (user_id, basket_id, access_type_id)
+                                                    VALUES (@user_id, @basket_id, @access_type_id)
+                                                    RETURNING id";
+
+                    relationId = Insert(relationsInsertQuery, relationsQueryParams, transaction);
+
+                    transaction.Commit();
+                }
+                //FIXME: bad practice
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                }
+            }
+
+            return relationId;
         }
 
         private int GetBasketId(string telegramId, string basketName)
@@ -127,9 +160,9 @@ namespace SigneWordBotAspCore.Services
         {
             var res = -1;
 
-            if (!string.IsNullOrEmpty(basketName))
+            if (string.IsNullOrEmpty(basketName))
             {
-                
+                basketName = "default";
             }
             
             
@@ -191,7 +224,9 @@ namespace SigneWordBotAspCore.Services
 
 
         
-        private int Insert(string query, IEnumerable<NpgsqlParameter> parameters = null)
+        private int Insert(string query, 
+            IEnumerable<NpgsqlParameter> parameters = null,
+            NpgsqlTransaction transaction = null)
         {
             var res = -1;
 
@@ -199,7 +234,7 @@ namespace SigneWordBotAspCore.Services
             {
 
                 connection.Open();
-                using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
+                using (NpgsqlCommand command = new NpgsqlCommand(query, connection, transaction))
                 {
                     if (parameters != null)
                         command.Parameters.AddRange(parameters.ToArray());
