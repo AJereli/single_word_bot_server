@@ -7,14 +7,18 @@ using Telegram.Bot.Types;
 
 namespace SigneWordBotAspCore.BotCommands
 {
-    public class StartCommand: IBotCommand
+    public class StartCommand: AbstractBotCommand
     {
 
-        public string Name => "/start";
+        public StartCommand()
+        {
+            _name = "/start";
+            _nextState = UserNextState.WaitPassword;
+        }
 
-        public UserStartState AfterState => UserStartState.WaitPassword;
+        public UserNextState AfterState => UserNextState.WaitPassword;
 
-        public async Task Execute(Message message, TelegramBotClient client)
+        public override async Task Execute(Message message, TelegramBotClient client)
         {
             var chatId = message.Chat.Id;
 
@@ -35,11 +39,6 @@ namespace SigneWordBotAspCore.BotCommands
             }
 #endif
         }
-
-       
-        public Task ExecuteSql(Message message, TelegramBotClient client, IDataBaseService dbService)
-        {
-            throw new NotImplementedException();
-        }
+        
     }
 }

@@ -7,26 +7,23 @@ using Telegram.Bot.Types;
 
 namespace SigneWordBotAspCore.BotCommands
 {
-    public class CreateCredentialsCommand: IBotCommand
+    public class CreateCredentialsCommand: AbstractBotCommand
     {
         public CreateCredentialsCommand()
         {
+            _name = "/createCredentials";
+            _nextState = UserNextState.WaitCredentials;
         }
+        
 
-
-
-        public string Name => "/createCredentials";
-
-        public UserStartState AfterState => UserStartState.WaitCredentials;
-
-        public async Task Execute(Message message, TelegramBotClient client)
+        public override async Task Execute(Message message, TelegramBotClient client)
         {
             var chatId = message.Chat.Id;
 
             try
             {
 #if DEBUG
-                Console.WriteLine("Enter password general password for your main basket of passwords.");
+                Console.WriteLine("Enter general password for your main basket of passwords.");
             }
             finally
             {
@@ -42,9 +39,6 @@ namespace SigneWordBotAspCore.BotCommands
 #endif
         }
 
-        public Task ExecuteSql(Message message, TelegramBotClient client, IDataBaseService dbService)
-        {
-            throw new NotImplementedException();
-        }
+      
     }
 }

@@ -12,36 +12,24 @@ using Newtonsoft.Json;
 
 namespace SigneWordBotAspCore.Services
 {
-    public class UpdateService : IUpdateService
+    internal class UpdateService : IUpdateService
     {
         private readonly IBotService _botService;
         private readonly ILogger<UpdateService> _logger;
-        private readonly IDataBaseService dataBaseService;
+        private readonly ICommandsService _commandsService;
+        private List<AbstractBotCommand> BotCommands { get; set; }
 
-        private List<IBotCommand> BotCommands { get; set; }
+        private Dictionary<long, UserNextState> StateForChaId { get; }
 
-        private Dictionary<string, IBotCommand> NameCommandDict { get; set; }
-        private Dictionary<long, UserStartState> StateForChaId { get; set; }
-
-        public UpdateService(IBotService botService, ILogger<UpdateService> logger, IDataBaseService dataBaseService)
+        public UpdateService(IBotService botService, ILogger<UpdateService> logger, ICommandsService commandsService)
         {
             _botService = botService;
             _logger = logger;
+            _commandsService = commandsService;
 
-            this.dataBaseService = dataBaseService;
-
-            BotCommands = new List<IBotCommand> {
-                new HelpCommand(),
-                new StartCommand(),
-                new CreateCredentialsCommand(),
-                new EnterPasswordCommand(),
-                new EnterCredentialsCommand(),
-            };
-
-            StateForChaId = new Dictionary<long, UserStartState>();
-            NameCommandDict = new Dictionary<string, IBotCommand>();
-
-            NameCommandDict = BotCommands.ToDictionary(c => c.Name, c => c);
+            BotCommands = new List<AbstractBotCommand>(commandsService.Commands);
+            StateForChaId = new Dictionary<long, UserNextState>();
+            
         }
 
 
@@ -74,17 +62,17 @@ namespace SigneWordBotAspCore.Services
 
             switch (state)
             {
-                case UserStartState.WaitPassword:
-                    var pendnigCommand = NameCommandDict["EnterPasswordCommand"];
-                    await pendnigCommand.ExecuteSql(message, _botService.Client, dataBaseService);
+                case UserNextState.WaitPassword:
+                    var pendnigCommand = _commandsService.GetCommand("EnterPasswordCommand");
+                    await pendnigCommand.Execute(message, _botService.Client);
                     break;
 
-                case UserStartState.WaitCredentials:
-                    var pendingCommand = NameCommandDict["EnterCredentialsCommand"];
-                    await pendingCommand.ExecuteSql(message, _botService.Client, dataBaseService);
+                case UserNextState.WaitCredentials:
+                    var pendingCommand = _commandsService.GetCommand("EnterCredentialsCommand");
+                    await pendingCommand.Execute(message, _botService.Client);
                     break;
 
-                case UserStartState.None:
+                case UserNextState.None:
                     break;
             }
 
@@ -101,11 +89,11 @@ namespace SigneWordBotAspCore.Services
             }
             var message = update.Message;
 
-            var command = NameCommandDict[message.Text];
+            var command = _commandsService.GetCommand(message.Text);
 
-            if (command.AfterState != UserStartState.None)
+            if (command.NextState != UserNextState.None)
             {
-                StateForChaId.Add(message.Chat.Id, command.AfterState);
+                StateForChaId.Add(message.Chat.Id, command.NextState);
             }
             
             await command.Execute(message, _botService.Client);
@@ -163,7 +151,7 @@ namespace SigneWordBotAspCore.Services
 
         private bool IsValidUpdateCommand(Update update)
         {
-            if (update == null || update.Message == null) return false;
+            if (update?.Message == null) return false;
 
             if (update.Message.Type != MessageType.Text)
                 return false;
@@ -171,7 +159,7 @@ namespace SigneWordBotAspCore.Services
             var message = update.Message.Text;
 
             //TODO: Make partial command support
-            if (!NameCommandDict.ContainsKey(message))
+            if (_commandsService.IsValidCommandName(message))
             {
                 return false;
             }

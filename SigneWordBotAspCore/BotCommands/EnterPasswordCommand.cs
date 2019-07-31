@@ -7,25 +7,26 @@ using Telegram.Bot.Types;
 
 namespace SigneWordBotAspCore.BotCommands
 {
-    public class EnterPasswordCommand: IBotCommand
+    public class EnterPasswordCommand: AbstractBotCommand
     {
 
-        public string Name => "EnterPasswordCommand";
-
-        public UserStartState AfterState => UserStartState.None;
-
-        public Task Execute(Message message, TelegramBotClient client)
+        private readonly IDataBaseService _dataBaseService;
+        
+        public EnterPasswordCommand(IDataBaseService dataBaseService)
         {
-            throw new NotImplementedException();
+            _dataBaseService = dataBaseService;
+
+            _name = "EnterPasswordCommand";
         }
 
-        public async Task ExecuteSql(Message message, TelegramBotClient client, IDataBaseService dbService)
+        public override async Task Execute(Message message, TelegramBotClient client)
         {
-            var userId = dbService.CreateUser(message.Text, message.Chat.Id);
+            
+            var userId = _dataBaseService.CreateUser(message.Text, message.Chat.Id);
             
             if (userId != -1)
             {
-                dbService.CreateBasket(userId, "default", null, "This is default basket for passwords");
+                _dataBaseService.CreateBasket(userId, "default", null, "This is default basket for passwords");
                 
                 await client.SendTextMessageAsync(message.Chat.Id,
                     "Your password created successful\n"+
@@ -34,7 +35,8 @@ namespace SigneWordBotAspCore.BotCommands
                     "<login>" +
                     "<password>");
             }
-
         }
+
+        
     }
 }

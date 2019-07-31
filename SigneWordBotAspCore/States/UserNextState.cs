@@ -1,7 +1,7 @@
 ﻿using System;
 namespace SigneWordBotAspCore.States
 {
-    public enum UserStartState
+    public enum UserNextState
     {
         None,
         WaitPassword,
