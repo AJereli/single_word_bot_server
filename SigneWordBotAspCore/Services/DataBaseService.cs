@@ -6,62 +6,13 @@ using FastMember;
 using Npgsql;
 using NpgsqlTypes;
 using SigneWordBotAspCore.Models;
+using SigneWordBotAspCore.Base;
+
 
 namespace SigneWordBotAspCore.Services
 {
 
-    static class NpgsqlDataReaderExtentions
-    {
-        public static T ConvertToObject<T>(this NpgsqlDataReader rd) where T : class, new()
-        {
-            Type type = typeof(T);
-            var accessor = TypeAccessor.Create(type);
-            var members = accessor.GetMembers();
-            var t = new T();
-
-            //IDictionary<string, string> fieldsNameMap = new Dictionary<string, string>();
-
-            for (int i = 0; i < rd.FieldCount; i++)
-            {
-                if (!rd.IsDBNull(i))
-                {
-                    string fieldName = rd.GetName(i);
-
-                    //PgNameAttribute
-
-                    //var fieldsNameMap = members.Select(m => {
-                    //    var propertyAttr = m.GetAttribute(typeof(PgNameAttribute), false) as PgNameAttribute;
-                    //    var propertyName = propertyAttr != null ? propertyAttr.PgName : m.Name;
-                    //    return new Tuple<string, string>(fieldName, propertyName);
-                    //}).ToDictionary(x => x.Item1, x => x.Item2);
-
-
-                    var firstMember = members.FirstOrDefault(m => {
-                        var propertyAttr = m.GetAttribute(typeof(PgNameAttribute), false) as PgNameAttribute;
-                        var propertyName = propertyAttr != null ? propertyAttr.PgName : m.Name;
-
-                        return string.Equals(fieldName, propertyName, StringComparison.OrdinalIgnoreCase);
-                    });
-                    if (firstMember != null)
-                    {
-                        try
-                        {
-                           
-                            //var test = fieldsNameMap[fieldName];
-                            accessor[t, firstMember.Name] = rd.GetValue(i);
-
-                        }catch (Exception ex)
-                        {
-                            System.Console.WriteLine(ex);
-                        }
-                    }
-                }
-            }
-
-            return t;
-        }
-    }
-
+   
     public class DataBaseService : IDataBaseService
     {
         private readonly IAppContext appContext;
@@ -87,11 +38,41 @@ namespace SigneWordBotAspCore.Services
             }
         }
 
-        public int CreateUser(string password, long telegram_id)
+
+        public bool IsUserExist(long telegramId)
         {
+            var query = "SELECT id, telegram_id FROM user WHERE telegram_id = @telegram_id;";
+            var telegramIdParam = new NpgsqlParameter<long>("telegram_id", telegramId);
+
+            try
+            {
+                connection.Open();
+
+                using (var command = new NpgsqlCommand(query, connection))
+                {
+                    command.Parameters.Add(telegramIdParam);
+                    using (var reader = command.ExecuteReader())
+                    {
+                        return reader.HasRows;
+                    }
+                }
+            }
+            finally
+            {
+                connection.Close();
+            }
+        }
+        
+        public int CreateUser(string password, long telegramId)
+        {
+            if (IsUserExist(telegramId))
+            {
+                return -1;
+            }
+            
             var sqlParams = new NpgsqlParameter[] {
                 new NpgsqlParameter(nameof(password), Sha512(password)),
-                new NpgsqlParameter(nameof(telegram_id), telegram_id)
+                new NpgsqlParameter("telegram_id", telegramId)
             };
 
             string query = "INSERT INTO public.user (password, telegram_id) VALUES (@password, @telegram_id) RETURNING id;";
@@ -99,32 +80,71 @@ namespace SigneWordBotAspCore.Services
             return Insert(query, sqlParams);
         }
 
-
-        public int CreateBasket()
+        
+        //TODO: validation for name repeating
+        public int CreateBasket(long userId, string name, string basketPass = null, string description = null)
         {
             int res = -1;
+            string cryptedPass = null;
+            
+            if (name.Length > 512)
+                return res;
+            
+            //TODO: 1024 chars limit for result pass
+            cryptedPass = EncryptString(basketPass);
+
+            var sqlParams = new NpgsqlParameter[]
+            {
+                new NpgsqlParameter<long>("user_id", userId),
+                new NpgsqlParameter<string>("name", name), 
+                new NpgsqlParameter<string>("basket_pass", cryptedPass),
+                new NpgsqlParameter<string>("description", description)
+                
+            };
+
+            string query = @"INSERT INTO public.passwords_basket 
+                            (user_id, name, basket_pass, description) 
+                            VALUES (@user_id, @name, @basket_pass, @description) 
+                            RETURNING id;";
+
+            res = Insert(query, sqlParams);
+
+            return res;
+        }
+
+        private int GetBasketId(string telegramId, string basketName)
+        {
+            var res = -1;
+
+            
 
 
             return res;
         }
 
 
-
-
-        public bool CreateCredentials(long telegramId, string credentialsName, string login, string password, string basketName = null)
+        public int CreateCredentials(long telegramId, string credentialsName, string login, string password, string basketName = null)
         {
-            var res = false;
+            var res = -1;
 
-
+            if (!string.IsNullOrEmpty(basketName))
+            {
+                
+            }
+            
+            
 
             var sqlParams = new[] {
                 new NpgsqlParameter("telegram_id", telegramId),
                 new NpgsqlParameter("login", login),
-                new NpgsqlParameter("unit_password", EncryptPassword(password)),
+                new NpgsqlParameter("unit_password", EncryptString(password)),
             };
 
 
-            string query = "INSERT INTO public.credentials (unit_password, name, login, basket_pass_id) VALUES (@password, @telegram_id) RETURNING id;";
+            string query = @"INSERT INTO public.credentials 
+                             (unit_password, name, login, basket_pass_id) 
+                             VALUES (@password, @telegram_id) 
+                             RETURNING id;";
 
 
             return res;
@@ -140,10 +160,8 @@ namespace SigneWordBotAspCore.Services
             try
             {
                 connection.Open();
-                using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
+                using (var command = new NpgsqlCommand(query, connection))
                 {
-
-
                     using (NpgsqlDataReader dataReader = command.ExecuteReader())
                     {
                         while (dataReader.Read())
@@ -151,9 +169,8 @@ namespace SigneWordBotAspCore.Services
                             var user = dataReader.ConvertToObject<UserModel>();
                             users.Add(user);
                         }
-                       
-                    }
 
+                    }
                 }
             }
             catch (NpgsqlException npgEx)
@@ -169,45 +186,12 @@ namespace SigneWordBotAspCore.Services
                 connection.Close();
             }
 
-
             return users;
         }
 
 
-
-        private T SelectOne<T>(string query, NpgsqlParameter[] parameters = null) where T : class, new()
-        {
-            T res = default(T);
-
-            try
-            {
-                connection.Open();
-                using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
-                {
-                    if (parameters != null)
-                        command.Parameters.AddRange(parameters);
-
-                    using (NpgsqlDataReader dataReader = command.ExecuteReader())
-                    {
-                        dataReader.Read();
-                        res = dataReader.ConvertToObject<T>();
-                        return res;
-                    }
-
-                }
-            }
-            catch (NpgsqlException npgEx)
-            {
-                Console.WriteLine(npgEx);
-            }
-            finally
-            {
-                connection.Close();
-            }
-            return res;
-        }
-
-        private int Insert(string query, NpgsqlParameter[] parameters = null)
+        
+        private int Insert(string query, IEnumerable<NpgsqlParameter> parameters = null)
         {
             var res = -1;
 
@@ -218,9 +202,11 @@ namespace SigneWordBotAspCore.Services
                 using (NpgsqlCommand command = new NpgsqlCommand(query, connection))
                 {
                     if (parameters != null)
-                        command.Parameters.AddRange(parameters);
+                        command.Parameters.AddRange(parameters.ToArray());
 
-                    res = (int)command.ExecuteScalar();
+                    var rawResult = command.ExecuteScalar();
+                    if (rawResult is int result)
+                        res = result;
                 }
             }
             catch (NpgsqlException npgEx)
@@ -236,9 +222,17 @@ namespace SigneWordBotAspCore.Services
         }
 
         //TODO: impl this
-        private string EncryptPassword(string pass)
+        /// <summary>
+        /// May return null!
+        /// </summary>
+        /// <param name="input">String that needs to encode</param>
+        /// <returns>result of encryption</returns>
+        private string EncryptString(string input)
         {
-            return pass;
+            if (string.IsNullOrEmpty(input))
+                return input;
+            
+            return input;
         }
 
         private string Sha512(string input)

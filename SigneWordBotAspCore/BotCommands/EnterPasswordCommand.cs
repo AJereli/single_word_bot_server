@@ -21,10 +21,12 @@ namespace SigneWordBotAspCore.BotCommands
 
         public async Task ExecuteSql(Message message, TelegramBotClient client, IDataBaseService dbService)
         {
-            var res = dbService.CreateUser(message.Text, message.Chat.Id);
-
-            if (res != -1)
+            var userId = dbService.CreateUser(message.Text, message.Chat.Id);
+            
+            if (userId != -1)
             {
+                dbService.CreateBasket(userId, "default", null, "This is default basket for passwords");
+                
                 await client.SendTextMessageAsync(message.Chat.Id,
                     "Your password created successful\n"+
                     "Now you can user /createCredentials command now" +
