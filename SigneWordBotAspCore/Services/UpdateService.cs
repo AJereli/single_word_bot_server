@@ -59,23 +59,27 @@ namespace SigneWordBotAspCore.Services
             }
 
             var state = StateForChaId[message.Chat.Id];
-
+            AbstractBotCommand pendingCommand = null;
             switch (state)
             {
-                case UserNextState.WaitPassword:
-                    var pendnigCommand = _commandsService.GetCommand("EnterPasswordCommand");
-                    await pendnigCommand.Execute(message, _botService.Client);
+                case UserNextState.WaitPassword: 
+                    pendingCommand = _commandsService.GetCommand("EnterPasswordCommand");
                     break;
 
                 case UserNextState.WaitCredentials:
-                    var pendingCommand = _commandsService.GetCommand("EnterCredentialsCommand");
-                    await pendingCommand.Execute(message, _botService.Client);
+                    pendingCommand = _commandsService.GetCommand("EnterCredentialsCommand");
+                    
                     break;
 
                 case UserNextState.None:
                     break;
+                
+                default:
+                    break;
             }
 
+            if (pendingCommand != null) await pendingCommand?.Execute(message, _botService.Client);
+            
             StateForChaId.Remove(message.Chat.Id);
         }
 
@@ -159,7 +163,7 @@ namespace SigneWordBotAspCore.Services
             var message = update.Message.Text;
 
             //TODO: Make partial command support
-            if (_commandsService.IsValidCommandName(message))
+            if (!_commandsService.IsValidCommandName(message))
             {
                 return false;
             }

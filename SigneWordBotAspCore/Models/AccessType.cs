@@ -2,7 +2,7 @@ namespace SigneWordBotAspCore.Models
 {
     public enum AccessType
     {
-        Owner = 0,
+        Owner = 1,
         SharedRead,
         SharedReadWrite
         

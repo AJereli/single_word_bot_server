@@ -26,6 +26,9 @@ namespace SigneWordBotAspCore.BotCommands
             {
 #if DEBUG
                 Console.WriteLine("Enter password general password for your main basket of passwords.");
+                await client.SendTextMessageAsync(chatId,
+                    "Enter password general password for your main basket of passwords.",
+                    parseMode: Telegram.Bot.Types.Enums.ParseMode.Default);
             }
             finally {
             }

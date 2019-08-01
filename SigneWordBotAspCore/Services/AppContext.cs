@@ -14,9 +14,9 @@ namespace SigneWordBotAspCore.Services
         //private string Host => "ec2-54-246-84-100.eu-west-1.compute.amazonaws.com";
 
         private string Host => "localhost";
-        private string DataBase => "tg_bot_db";
+        private string DataBase => "signle_word_db";
         private string Port => "5432";
-        private string User => "username";
+        private string User => "user";
         private string Password => "";
 
         public string DBConnectionString => $"Server={Host};Port={Port};Database={DataBase};User Id={User};Password={Password};";

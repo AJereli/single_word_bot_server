@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Autofac;
-using Autofac.Extensions.DependencyInjection;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -24,12 +23,11 @@ namespace SigneWordBotAspCore
         }
 
         
-        public IContainer ApplicationContainer { get; private set; }
         
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
-        public IServiceProvider ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
@@ -42,16 +40,8 @@ namespace SigneWordBotAspCore
             services.AddSingleton<IUpdateService, UpdateService>();
             services.AddSingleton<ICommandsService, CommandsService>();
             
-            
-            
+        }
        
-
-            return new AutofacServiceProvider(ApplicationContainer);
-        }
-        public void ConfigureContainer(ContainerBuilder builder)
-        {
-           
-        }
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {

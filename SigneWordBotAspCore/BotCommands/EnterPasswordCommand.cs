@@ -21,8 +21,9 @@ namespace SigneWordBotAspCore.BotCommands
 
         public override async Task Execute(Message message, TelegramBotClient client)
         {
+            var user = message.From;
             
-            var userId = _dataBaseService.CreateUser(message.Text, message.Chat.Id);
+            var userId = _dataBaseService.CreateUser(user, message.Text);
             
             if (userId != -1)
             {
@@ -30,10 +31,11 @@ namespace SigneWordBotAspCore.BotCommands
                 
                 await client.SendTextMessageAsync(message.Chat.Id,
                     "Your password created successful\n"+
-                    "Now you can user /createCredentials command now" +
-                    "Use this template for credentials sending:" +
-                    "<login>" +
-                    "<password>");
+                    "Now you can user /createCredentials command now\n" +
+                    "Basket by default will use\n" +
+                    "Use this template for credentials sending: \n" +
+                    "/createCredentials -login <login> -pass <pass> -basket <basketname>\n" +
+                    "-basket is optional parameter.\n For more information use /help");
             }
         }
 

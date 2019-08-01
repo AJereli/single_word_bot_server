@@ -22,7 +22,7 @@ namespace SigneWordBotAspCore.Services
                 new HelpCommand(),
                 new CreateCredentialsCommand(),
                 new EnterCredentialsCommand(dataBaseService),
-                
+                new EnterPasswordCommand(dataBaseService)
             };
             
             _commandDictionary = Commands.ToDictionary(c => c.Name, c => c);
