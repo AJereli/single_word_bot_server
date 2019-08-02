@@ -8,20 +8,19 @@ namespace SigneWordBotAspCore.Base
 {
     internal static class NpgsqlDataReaderExtentions
     {
-        public static T ConvertToObject<T>(this NpgsqlDataReader rd) where T : class, new()
+        public static T ConvertToObject<T>(this NpgsqlDataReader rd)
         {
             Type type = typeof(T);
             var accessor = TypeAccessor.Create(type);
             var members = accessor.GetMembers();
-            var t = new T();
+            var t = default(T);
 
 
             for (int i = 0; i < rd.FieldCount; i++)
             {
                 if (!rd.IsDBNull(i))
                 {
-                    string fieldName = rd.GetName(i);
-
+                    var fieldName = rd.GetName(i);
 
                     var firstMember = members.FirstOrDefault(m => {
                         var propertyAttr = m.GetAttribute(typeof(PgNameAttribute), false) as PgNameAttribute;
@@ -33,10 +32,7 @@ namespace SigneWordBotAspCore.Base
                     {
                         try
                         {
-
-                            //var test = fieldsNameMap[fieldName];
                             accessor[t, firstMember.Name] = rd.GetValue(i);
-
                         }
                         catch (Exception ex)
                         {
