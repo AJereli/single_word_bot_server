@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using SigneWordBotAspCore.BotCommands;
@@ -5,8 +6,9 @@ using SigneWordBotAspCore.Exceptions;
 
 namespace SigneWordBotAspCore.Services
 {
-    internal sealed class CommandsService: ICommandsService
+    public sealed class CommandsService: ICommandsService
     {
+        // ReSharper disable once NotAccessedField.Local
         private readonly IDataBaseService _dataBaseService;
         private readonly IDictionary<string, AbstractBotCommand> _commandDictionary;
 
@@ -20,9 +22,11 @@ namespace SigneWordBotAspCore.Services
             Commands = new List<AbstractBotCommand> {
                 new StartCommand(),
                 new HelpCommand(),
-                new CreateCredentialsCommand(),
+                new CreateCredentialsCommand(dataBaseService),
                 new EnterCredentialsCommand(dataBaseService),
-                new EnterPasswordCommand(dataBaseService)
+                new EnterPasswordCommand(dataBaseService),
+                
+                new ShowCommand(dataBaseService)
             };
             
             _commandDictionary = Commands.ToDictionary(c => c.Name, c => c);
@@ -44,11 +48,22 @@ namespace SigneWordBotAspCore.Services
         {
             try
             {
+                //Check for part of command name
+                if (!_commandDictionary.ContainsKey(commandName))
+                {
+                    return _commandDictionary[commandName.Split(' ')[0]];
+                }
+
                 return _commandDictionary[commandName];
             }
             catch (KeyNotFoundException)
             {
                 throw new CommandNotFoundException();
+            }
+            catch (IndexOutOfRangeException)
+            {
+                throw new CommandNotFoundException();
+                
             }
         }
     }

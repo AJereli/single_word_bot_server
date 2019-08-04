@@ -3,7 +3,7 @@ using SigneWordBotAspCore.BotCommands;
 
 namespace SigneWordBotAspCore.Services
 {
-    internal interface ICommandsService
+    public interface ICommandsService
     {
         IEnumerable<AbstractBotCommand> Commands { get; set; }
         bool IsValidCommandName(string commandName);

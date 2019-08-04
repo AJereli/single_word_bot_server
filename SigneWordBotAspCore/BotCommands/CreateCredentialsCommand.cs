@@ -28,16 +28,16 @@ namespace SigneWordBotAspCore.BotCommands
 
         [Option('b', "basket", Required = false, HelpText = "Select basket (optional)")]
         public string Basket { get; set; }
-        
-
     }
 
     public class CreateCredentialsCommand: AbstractBotCommand
     {
-        public CreateCredentialsCommand()
+        private readonly IDataBaseService _dataBaseService;
+        public CreateCredentialsCommand(IDataBaseService dataBaseService)
         {
             _name = "/addCredentials";
-           // _nextState = UserNextState.WaitCredentials;
+            _dataBaseService = dataBaseService;
+            // _nextState = UserNextState.WaitCredentials;
         }
 
         public override async Task Execute(Message message, TelegramBotClient client)
@@ -48,11 +48,9 @@ namespace SigneWordBotAspCore.BotCommands
             
             var res = Parser.Default.ParseArguments<AddCredsOption>(commandPart)
                 .WithParsed(credentialOptions =>
-                {
-                    Console.WriteLine("this is add verb");
-                    Console.WriteLine($"pass is {credentialOptions.Password}");
-                    
-                })
+                    {
+                        _dataBaseService.CreateCredentials(message.From, credentialOptions);
+                    })
                 .WithNotParsed(errors =>
                 {
                     foreach (var error in errors)
@@ -65,10 +63,11 @@ namespace SigneWordBotAspCore.BotCommands
                     }
                     
                 });
+            
             try
             {
 #if DEBUG
-                Console.WriteLine("Enter general password for your main basket of passwords.");
+//                Console.WriteLine("Enter general password for your main basket of passwords.");
             }
             finally
             {

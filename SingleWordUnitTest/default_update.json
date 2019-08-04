@@ -1,0 +1,23 @@
+{
+  "update_id": 751167772,
+  "message": {
+    "message_id": 165,
+    "from": {
+      "id": 123,
+      "is_bot": false,
+      "first_name": "Test_Test",
+      "last_name": "Test_Test",
+      "username": "Test_Test_Uname",
+      "language_code": "ru"
+    },
+    "date": 1563825173,
+    "chat": {
+      "id": 123,
+      "type": "private",
+      "username": "Test_Test_Uname",
+      "first_name": "Test_Test",
+      "last_name": "Test_Test"
+    },
+    "text": "/start"
+  }
+}

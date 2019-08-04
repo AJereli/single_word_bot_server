@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Linq;
-using FastMember;
 using Npgsql;
-using NpgsqlTypes;
 using SigneWordBotAspCore.Models;
 using SigneWordBotAspCore.Base;
 using SigneWordBotAspCore.BotCommands;
@@ -17,16 +14,17 @@ namespace SigneWordBotAspCore.Services
    
     public class DataBaseService : IDataBaseService
     {
-        private readonly IAppContext appContext;
+        // ReSharper disable once NotAccessedField.Local
+        private readonly IAppContext _appContext;
 
-        private readonly NpgsqlConnection connection;
+        private readonly NpgsqlConnection _connection;
 
         public DataBaseService(IAppContext appContext)
         {
-            this.appContext = appContext;
+            _appContext = appContext;
 
             Console.WriteLine(appContext.DBConnectionString);
-            connection = new NpgsqlConnection(appContext.DBConnectionString);
+            _connection = new NpgsqlConnection(appContext.DBConnectionString);
             try
             {
                 GetUsers();
@@ -40,28 +38,34 @@ namespace SigneWordBotAspCore.Services
             }
         }
 
-
-        public bool IsUserExist(long telegramId)
+        public int GetUserId(long telegramId)
         {
-            const string query = "SELECT id, tg_id FROM public.user WHERE tg_id = @tg_id LIMIT 1;";
+            const string query = "SELECT id FROM public.user WHERE tg_id = @tg_id LIMIT 1;";
             var telegramIdParam = new NpgsqlParameter<long>("tg_id", telegramId);
 
+            return SelectOne<int>(query, new[] {telegramIdParam});
+        }
+        
+        public bool IsUserExist(long telegramId)
+        {
+            //TODO: check it by 'exist'
+            const string query = "SELECT exists(SELECT 1 FROM public.user WHERE tg_id=@tg_id);";
+            var telegramIdParam = new NpgsqlParameter<long>("tg_id", telegramId);
+
+            var isConnectionOpenedByMe = false;
             try
             {
-                TryOpenConnection();
+                isConnectionOpenedByMe = TryOpenConnection();
 
-                using (var command = new NpgsqlCommand(query, connection))
+                using (var command = new NpgsqlCommand(query, _connection))
                 {
                     command.Parameters.Add(telegramIdParam);
-                    using (var reader = command.ExecuteReader())
-                    {
-                        if (reader == null)
-                        {
-                            return false;
-                        }
 
-                        return reader.HasRows;
-                    }
+                    var isExists = command.ExecuteScalar();
+                    if (isExists == null)
+                        return false;
+                    else return (bool) isExists;
+
                 }
             }
             catch (NpgsqlException)
@@ -70,7 +74,8 @@ namespace SigneWordBotAspCore.Services
             }
             finally
             {
-                connection.Close();
+                if (isConnectionOpenedByMe)
+                    _connection.Close();
             }
         }
         
@@ -99,27 +104,73 @@ namespace SigneWordBotAspCore.Services
         }
 
         
+
+        public IEnumerable<CredentialsModel> GetCredentials(TgUser user, ShowCredentialOptions credentialOptions)
+        {
+            IEnumerable<CredentialsModel> result;
+            
+            var basketName = credentialOptions.Basket;
+            basketName = string.IsNullOrEmpty(basketName) ? "default" : basketName;
+
+
+            IList<NpgsqlParameter> sqlParams = new List<NpgsqlParameter>();
+            var query = @"SELECT c.name, c.login, c.unit_password, passwords_basket.name as basket_name
+                                FROM passwords_basket
+                                JOIN user_basket as ub ON passwords_basket.id = ub.basket_id
+                                JOIN public.user u on ub.user_id = u.id
+                                JOIN credentials c on passwords_basket.id = c.basket_pass_id
+                                WHERE tg_id = @tg_id ";
+            sqlParams.Add(new NpgsqlParameter<long>("tg_id", user.Id));
+
+            if (credentialOptions.ShowAll)
+            {
+                query += ";";
+            }
+            else if (!string.IsNullOrEmpty(credentialOptions.Title))
+            {
+                var title = credentialOptions.Title.ToLower();
+                sqlParams.Add(new NpgsqlParameter<string>("name", $"%{title}%")  );
+
+                query += "AND LOWER(name) LIKE @name;";
+            }
+            else
+            {
+                sqlParams.Add(new NpgsqlParameter<string>("passwords_basket.name", basketName.ToLower()));
+                query += "AND LOWER(passwords_basket.name) = @passwords_basket.name;";
+            }
+            result = SelectMany<CredentialsModel>(query, sqlParams);
+
+
+            
+            return result;
+        }
+
+        public int CreateBasket(TgUser user, string name, string basketPass = null, string description = null)
+        {
+            var userId = GetUserId(user.Id);
+
+            return CreateBasket(userId, name, basketPass, description);
+        }
+
         //TODO: validation for name repeating
         public int CreateBasket(long userId, string name, string basketPass = null, string description = null)
         {
             int basketId = -1;
             int relationId = -1;
             
-            string cryptedPass = null;
-            
             //TODO: need exception here
             if (name.Length > 512)
                 return basketId;
-            
+
             //TODO: 1024 chars limit for result pass
-            cryptedPass = Crypting.EncryptString(basketPass);
+            var cryptedPass = Crypting.EncryptString(basketPass);
 
             var sqlParams = new NpgsqlParameter[]
             {
-                new NpgsqlParameter<string>("name", name), 
+                new NpgsqlParameter<string>("name", name),
                 new NpgsqlParameter<string>("basket_pass", cryptedPass),
                 new NpgsqlParameter<string>("description", description)
-                
+
             };
 
             const string query = @"INSERT INTO public.passwords_basket 
@@ -128,7 +179,7 @@ namespace SigneWordBotAspCore.Services
                             RETURNING id;";
 
             TryOpenConnection();
-            using (var transaction = connection.BeginTransaction())
+            using (var transaction = _connection.BeginTransaction())
             {
                 try
                 {
@@ -155,103 +206,43 @@ namespace SigneWordBotAspCore.Services
 
                     transaction.Commit();
                 }
-                //FIXME: bad practice
-                catch (Exception ex)
+                //TODO: bad practice
+                catch (Exception)
                 {
                     transaction?.Rollback();
                 }
                 finally
                 {
-                    connection.Close();
+                    _connection.Close();
                 }
             }
 
             return relationId;
         }
 
-        private bool TryOpenConnection()
-        {
-            try
-            {
-                connection.Open();
-                return true;
-            }
-            catch (Exception e)
-            {
-                return false;
-            }
-        }
-        
+
         private int GetBasketId(long telegramId, string basketName)
         {
-            var res = -1;
 
             var sqlParams = new NpgsqlParameter[] {
                 new NpgsqlParameter<long>("tg_id", telegramId),
                 new NpgsqlParameter<string>("basket_name", basketName),
             };
             
-            const string query = @"SELECT pb.id AS basket_id, u.id AS user_id FROM public.passwords_basket AS pb 
+            const string query = @"SELECT pb.id AS basket_id FROM public.passwords_basket AS pb 
                                     JOIN public.user_basket AS ub ON pb.id = ub.basket_id 
                                     JOIN public.user as u ON u.id = ub.user_id 
                                     WHERE u.tg_id = @tg_id AND pb.name = @basket_name;";
 
-            var fdf = SelectOne<int>(query, sqlParams);
-            
-            return res;
+            return SelectOne<int>(query, sqlParams);
         }
         
-        private T SelectOne<T>(string query, 
-            IEnumerable<NpgsqlParameter> parameters = null,
-            NpgsqlTransaction transaction = null)
-        {
-            var res = default(T);
-            
-            var connectionIsOpenedByMe = false;
-            
-            try
-            {
-                connectionIsOpenedByMe = TryOpenConnection();
-                using (NpgsqlCommand command = new NpgsqlCommand(query, connection, transaction))
-                {
-                    if (parameters != null)
-                        command.Parameters.AddRange(parameters.ToArray());
-
-                    using (NpgsqlDataReader dataReader = command.ExecuteReader())
-                    {
-                        if (dataReader.HasRows)
-                        {
-                            dataReader.Read();
-                            var readResult = dataReader.ConvertToObject<T>();
-                            
-                            res = readResult;
-                           
-                        }
-                    }
-                }
-            }
-            catch (NpgsqlException npgEx)
-            {
-                res = default(T);
-                Console.WriteLine(npgEx);
-            }
-            finally
-            {
-                if (connectionIsOpenedByMe)
-                    connection.Close();
-            }
-
-            return res;
-        }
-    
         public int CreateCredentials(TgUser tgUser, AddCredsOption credsOption)
         {
-            var res = -1;
             var basketName = credsOption.Basket ?? "default";
 
             //TODO: needs get it
-            var basketPassId = GetBasketId (tgUser.Id, basketName);
-            
+            var basketPassId = GetBasketId(tgUser.Id, basketName);
             
             
             var sqlParams = new NpgsqlParameter[] {
@@ -262,16 +253,58 @@ namespace SigneWordBotAspCore.Services
             };
 
 
-            string query = @"INSERT INTO public.credentials 
+            const string query = @"INSERT INTO public.credentials 
                              (unit_password, name, login, basket_pass_id) 
-                             VALUES (@password, @telegram_id) 
+                             VALUES (@unit_password, @name, @login, @basket_pass_id) 
                              RETURNING id;";
 
-
-            return res;
+            return Insert(query, sqlParams);
         }
 
 
+        private IEnumerable<T> SelectMany<T>(string query, IEnumerable<NpgsqlParameter> sqlParams,
+            NpgsqlTransaction transaction = null)
+        {
+            IList<T> res = new List<T>();
+
+            var connectionOpenedByMe = false;
+            try
+            {
+                connectionOpenedByMe = TryOpenConnection();
+
+                
+                using (var command = new NpgsqlCommand(query, _connection))
+                {
+                    if (sqlParams != null)
+                    {
+                        command.Parameters.AddRange(sqlParams.ToArray());
+                    }
+                    
+                    using (var dataReader = command.ExecuteReader())
+                    {
+                        
+                        while (dataReader.Read())
+                        {
+                            var t = dataReader.ConvertToObject<T>();
+                            res.Add(t);
+                        }
+
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                transaction?.Rollback();
+            }
+            finally
+            {
+                if (connectionOpenedByMe)
+                    _connection.Close();
+            }
+
+            return res;
+        }
+        
         public List<UserModel> GetUsers()
         {
             var users = new List<UserModel>();
@@ -280,10 +313,10 @@ namespace SigneWordBotAspCore.Services
 
             try
             {
-                connection.Open();
-                using (var command = new NpgsqlCommand(query, connection))
+                _connection.Open();
+                using (var command = new NpgsqlCommand(query, _connection))
                 {
-                    using (NpgsqlDataReader dataReader = command.ExecuteReader())
+                    using (var dataReader = command.ExecuteReader())
                     {
                         while (dataReader.Read())
                         {
@@ -304,14 +337,57 @@ namespace SigneWordBotAspCore.Services
             }
             finally
             {
-                connection.Close();
+                _connection.Close();
             }
 
             return users;
         }
 
 
-        
+        private T SelectOne<T>(string query, 
+            IEnumerable<NpgsqlParameter> parameters = null,
+            NpgsqlTransaction transaction = null)
+        {
+            var res = default(T);
+            
+            var connectionIsOpenedByMe = false;
+            
+            try
+            {
+                connectionIsOpenedByMe = TryOpenConnection();
+                using (var command = new NpgsqlCommand(query, _connection, transaction))
+                {
+                    if (parameters != null)
+                        command.Parameters.AddRange(parameters.ToArray());
+
+                    using (var dataReader = command.ExecuteReader())
+                    {
+                        if (dataReader.HasRows)
+                        {
+                            dataReader.Read();
+                            var readResult = dataReader.ConvertToObject<T>();
+                            
+                            res = readResult;
+                           
+                        }
+                    }
+                }
+            }
+            catch (NpgsqlException npgEx)
+            {
+                res = default(T);
+                Console.WriteLine(npgEx);
+            }
+            finally
+            {
+                if (connectionIsOpenedByMe)
+                    _connection.Close();
+            }
+
+            return res;
+        }
+
+
         private int Insert(string query, 
             IEnumerable<NpgsqlParameter> parameters = null,
             NpgsqlTransaction transaction = null)
@@ -322,7 +398,7 @@ namespace SigneWordBotAspCore.Services
             {
 
                 connectionIsOpenedByMe = TryOpenConnection();
-                using (NpgsqlCommand command = new NpgsqlCommand(query, connection, transaction))
+                using (var command = new NpgsqlCommand(query, _connection, transaction))
                 {
                     if (parameters != null)
                         command.Parameters.AddRange(parameters.ToArray());
@@ -339,13 +415,23 @@ namespace SigneWordBotAspCore.Services
             finally
             {
                 if (connectionIsOpenedByMe)
-                    connection.Close();
+                    _connection.Close();
             }
 
             return res;
         }
-
-      
+        private bool TryOpenConnection()   
+        {                                  
+            try                            
+            {                              
+                _connection.Open();         
+                return true;               
+            }                              
+            catch (Exception)            
+            {                              
+                return false;              
+            }                              
+        }
 
     }
 }

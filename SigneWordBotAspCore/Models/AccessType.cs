@@ -5,7 +5,5 @@ namespace SigneWordBotAspCore.Models
         Owner = 1,
         SharedRead,
         SharedReadWrite
-        
-        
     }
 }

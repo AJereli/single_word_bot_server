@@ -3,18 +3,20 @@ using System.Linq;
 using FastMember;
 using Npgsql;
 using NpgsqlTypes;
-
+using static System.Activator;
 namespace SigneWordBotAspCore.Base
 {
     internal static class NpgsqlDataReaderExtentions
     {
-        public static T ConvertToObject<T>(this NpgsqlDataReader rd)
+        public static T ConvertToObject<T>(this NpgsqlDataReader rd) 
         {
             Type type = typeof(T);
             var accessor = TypeAccessor.Create(type);
             var members = accessor.GetMembers();
-            var t = default(T);
 
+//            var c = typeof(T).GetConstructor();
+            dynamic t = CreateInstance(typeof(T));
+            
 
             for (int i = 0; i < rd.FieldCount; i++)
             {
@@ -23,8 +25,7 @@ namespace SigneWordBotAspCore.Base
                     var fieldName = rd.GetName(i);
 
                     var firstMember = members.FirstOrDefault(m => {
-                        var propertyAttr = m.GetAttribute(typeof(PgNameAttribute), false) as PgNameAttribute;
-                        var propertyName = propertyAttr != null ? propertyAttr.PgName : m.Name;
+                        var propertyName = m.GetAttribute(typeof(PgNameAttribute), false) is PgNameAttribute propertyAttr ? propertyAttr.PgName : m.Name.ToSnakeCase();
 
                         return string.Equals(fieldName, propertyName, StringComparison.OrdinalIgnoreCase);
                     });
@@ -36,8 +37,12 @@ namespace SigneWordBotAspCore.Base
                         }
                         catch (Exception ex)
                         {
-                            System.Console.WriteLine(ex);
+                            Console.WriteLine(ex);
                         }
+                    }
+                    else if (typeof(T).IsValueType)
+                    {
+                        t = (T)rd.GetValue(i);
                     }
                 }
             }

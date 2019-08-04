@@ -7,7 +7,7 @@ namespace SigneWordBotAspCore.Models
         [PgName("id")]
         public int Id { get; set; }
         
-        [PgName("telegram_id")]
+        [PgName("tg_id")]
         public long TelegramId { get; set; }
         
         [PgName("first_name")]

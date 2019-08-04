@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 
 namespace SigneWordBotAspCore.Services
 {
-    internal class UpdateService : IUpdateService
+    public class UpdateService : IUpdateService
     {
         private readonly IBotService _botService;
         private readonly ILogger<UpdateService> _logger;
@@ -95,6 +95,9 @@ namespace SigneWordBotAspCore.Services
 
             var command = _commandsService.GetCommand(message.Text);
 
+            
+            //TODO: first check and then execute or add next command
+
             if (command.NextState != UserNextState.None)
             {
                 StateForChaId.Add(message.Chat.Id, command.NextState);
@@ -111,7 +114,7 @@ namespace SigneWordBotAspCore.Services
             string json = JsonConvert.SerializeObject(update);
 
             System.Console.WriteLine(json);
-            _logger.LogInformation(json);
+//            _logger.LogInformation(json);
 
             if (update.Type != UpdateType.Message)
             {
@@ -156,19 +159,35 @@ namespace SigneWordBotAspCore.Services
         private bool IsValidUpdateCommand(Update update)
         {
             if (update?.Message == null) return false;
-
+            
+            var res = true;
+            
             if (update.Message.Type != MessageType.Text)
                 return false;
 
             var message = update.Message.Text;
 
+
+            
+            
             //TODO: Make partial command support
-            if (!_commandsService.IsValidCommandName(message))
+
+            res = _commandsService.IsValidCommandName(message);
+            
+            if (!res)
             {
-                return false;
+                var splited = message.Split(' ');
+                if (splited != null && splited.Length > 0)
+                {
+                    var keyOfCommand = splited[0];
+                    res = _commandsService.IsValidCommandName(keyOfCommand);
+                }
             }
 
-            return true;
+            
+                
+            
+            return res;
         }
     }
 }
