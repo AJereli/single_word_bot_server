@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Npgsql;
 using SigneWordBotAspCore.Models;
-using SigneWordBotAspCore.Base;
+using SigneWordBotAspCore.Utils;
 using SigneWordBotAspCore.BotCommands;
 using SigneWordBotAspCore.BotCommands.Options;
 using SigneWordBotAspCore.Exceptions;

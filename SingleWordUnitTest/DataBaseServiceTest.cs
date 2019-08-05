@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
-using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
+
 using Newtonsoft.Json;
 using SigneWordBotAspCore.Services;
 using Telegram.Bot.Types;
@@ -17,7 +16,6 @@ namespace SingleWordUnitTest
         
         
         [Fact]
-        [Benchmark(Description = "CreateUserTest")]
         public async void CreateUserTest()
         {
             var update = await GetUpdateFromJson(UpdateJsonType.Start);
@@ -48,7 +46,6 @@ namespace SingleWordUnitTest
         }
 
         [Fact]
-        [Benchmark(Description = "CreateBasket")]
         public async void CreateBasket()
         {
             var update = await GetUpdateFromJson(UpdateJsonType.Default);

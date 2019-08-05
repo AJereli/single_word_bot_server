@@ -1,6 +1,6 @@
 using System.Linq;
 
-namespace SigneWordBotAspCore.Base
+namespace SigneWordBotAspCore.Utils
 {
     public static class ExtensionMethods
     {

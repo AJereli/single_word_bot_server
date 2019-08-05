@@ -4,7 +4,7 @@ using FastMember;
 using Npgsql;
 using NpgsqlTypes;
 using static System.Activator;
-namespace SigneWordBotAspCore.Base
+namespace SigneWordBotAspCore.Utils
 {
     internal static class NpgsqlDataReaderExtentions
     {
