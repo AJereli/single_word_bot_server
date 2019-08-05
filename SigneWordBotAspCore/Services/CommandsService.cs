@@ -25,7 +25,7 @@ namespace SigneWordBotAspCore.Services
                 new CreateCredentialsCommand(dataBaseService),
                 new EnterCredentialsCommand(dataBaseService),
                 new EnterPasswordCommand(dataBaseService),
-                
+                new CreateBasketCommand(dataBaseService),
                 new ShowCommand(dataBaseService)
             };
             

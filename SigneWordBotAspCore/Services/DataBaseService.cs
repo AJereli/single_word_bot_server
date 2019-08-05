@@ -5,6 +5,8 @@ using Npgsql;
 using SigneWordBotAspCore.Models;
 using SigneWordBotAspCore.Base;
 using SigneWordBotAspCore.BotCommands;
+using SigneWordBotAspCore.BotCommands.Options;
+using SigneWordBotAspCore.Exceptions;
 using Telegram.Bot.Types;
 using TgUser = Telegram.Bot.Types.User;
 
@@ -27,7 +29,6 @@ namespace SigneWordBotAspCore.Services
             _connection = new NpgsqlConnection(appContext.DBConnectionString);
             try
             {
-                GetUsers();
                 //connection.Open();
                 //CreateUser("password", 1);
                 //connection.Close();
@@ -48,7 +49,6 @@ namespace SigneWordBotAspCore.Services
         
         public bool IsUserExist(long telegramId)
         {
-            //TODO: check it by 'exist'
             const string query = "SELECT exists(SELECT 1 FROM public.user WHERE tg_id=@tg_id);";
             var telegramIdParam = new NpgsqlParameter<long>("tg_id", telegramId);
 
@@ -77,6 +77,24 @@ namespace SigneWordBotAspCore.Services
                 if (isConnectionOpenedByMe)
                     _connection.Close();
             }
+        }
+
+        public bool IsBasketExist(long userId, string basketName)
+        {
+            const string query = @"SELECT exists(SELECT ub.user_id as user_id, pb.id, name FROM user_basket AS ub 
+                                                    JOIN passwords_basket pb ON pb.id = ub.basket_id 
+                                                    WHERE pb.name = @name
+                                                      AND ub.user_id = @user_id
+                                                      AND ub.access_type_id = 1)";
+            
+            var sqlParams = new NpgsqlParameter[]
+            {
+                new NpgsqlParameter<string>("name", basketName),
+                new NpgsqlParameter<long>("user_id", userId), 
+            };
+
+            return SelectOne<bool>(query, sqlParams);
+
         }
         
         public int CreateUser(User tgUser, string password)
@@ -145,6 +163,18 @@ namespace SigneWordBotAspCore.Services
             return result;
         }
 
+        
+        
+        
+        
+        /// <summary>
+        /// Create Basket and relations in many-to-many table
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="name"></param>
+        /// <param name="basketPass"></param>
+        /// <param name="description"></param>
+        /// <returns>Return id of new relation row</returns>
         public int CreateBasket(TgUser user, string name, string basketPass = null, string description = null)
         {
             var userId = GetUserId(user.Id);
@@ -152,16 +182,26 @@ namespace SigneWordBotAspCore.Services
             return CreateBasket(userId, name, basketPass, description);
         }
 
-        //TODO: validation for name repeating
+        /// <summary>
+        /// Create Basket and relations in many-to-many table
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="name"></param>
+        /// <param name="basketPass"></param>
+        /// <param name="description"></param>
+        /// <returns>Return id of new relation row</returns>
         public int CreateBasket(long userId, string name, string basketPass = null, string description = null)
         {
             int basketId = -1;
             int relationId = -1;
-            
-            //TODO: need exception here
-            if (name.Length > 512)
-                return basketId;
 
+            if (name.Length > 512)
+                throw new BasketAlreadyExistException();
+
+            if (IsBasketExist(userId, name))
+                return -1;
+            
+            
             //TODO: 1024 chars limit for result pass
             var cryptedPass = Crypting.EncryptString(basketPass);
 
@@ -183,6 +223,9 @@ namespace SigneWordBotAspCore.Services
             {
                 try
                 {
+                    
+                    
+                    
                     basketId = Insert(query, sqlParams);
 
                     if (basketId == -1)
@@ -241,10 +284,8 @@ namespace SigneWordBotAspCore.Services
         {
             var basketName = credsOption.Basket ?? "default";
 
-            //TODO: needs get it
             var basketPassId = GetBasketId(tgUser.Id, basketName);
-            
-            
+
             var sqlParams = new NpgsqlParameter[] {
                 new NpgsqlParameter<int>("basket_pass_id", basketPassId),
                 new NpgsqlParameter<string>("login", credsOption.Login),

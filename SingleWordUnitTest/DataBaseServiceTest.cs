@@ -48,12 +48,24 @@ namespace SingleWordUnitTest
         }
 
         [Fact]
-        [Benchmark(Description = "")]
+        [Benchmark(Description = "CreateBasket")]
         public async void CreateBasket()
         {
             var update = await GetUpdateFromJson(UpdateJsonType.Default);
 
-//            var result = DataBaseService.CreateBasket()
+            var result = DataBaseService.CreateBasket(update.Message.From, "qwerty2");
+            
+            Assert.NotEqual(-1, result);
+
+            var sameNameResult = DataBaseService.CreateBasket(update.Message.From, "qwerty");
+            
+            Assert.Equal(-1, sameNameResult);
+
+            var withPass = DataBaseService.CreateBasket(update.Message.From, "WithPass2");
+            Assert.NotEqual(-1, withPass);
+
+            var withDesc = DataBaseService.CreateBasket(update.Message.From, "WithDescr2", "pass", "DESCRIPTION HAHAH");
+            Assert.NotEqual(-1, withDesc);
         }
     }
 }

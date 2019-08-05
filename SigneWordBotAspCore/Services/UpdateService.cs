@@ -88,7 +88,7 @@ namespace SigneWordBotAspCore.Services
             if (!IsValidUpdateCommand(update))
             {
                 await _botService.Client.SendTextMessageAsync(
-                        update.Message.Chat.Id, $"Unsupported command2");
+                        update.Message.Chat.Id, $"Unsupported command");
                 return;
             }
             var message = update.Message;

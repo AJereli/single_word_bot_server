@@ -16,5 +16,8 @@ namespace SigneWordBotAspCore.Base
                 return c.ToString();
             })).ToLower();
         }
+        
+        
+        
     }
 }
