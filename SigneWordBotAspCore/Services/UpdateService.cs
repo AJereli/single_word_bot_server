@@ -183,9 +183,6 @@ namespace SigneWordBotAspCore.Services
                     res = _commandsService.IsValidCommandName(keyOfCommand);
                 }
             }
-
-            
-                
             
             return res;
         }

@@ -37,6 +37,11 @@ namespace SigneWordBotAspCore.BotCommands
                     "/createCredentials -login <login> -pass <pass> -basket <basketname>\n" +
                     "-basket is optional parameter.\n For more information use /help");
             }
+            else
+            {
+                await client.SendTextMessageAsync(message.Chat.Id,
+                    "You already can use bot. Enter /help for more information");
+            }
         }
 
         

@@ -12,10 +12,10 @@ using Telegram.Bot.Types;
 
 namespace SigneWordBotAspCore.BotCommands
 {
-
-    public class CreateCredentialsCommand: AbstractBotCommand
+    public class CreateCredentialsCommand : AbstractBotCommand
     {
         private readonly IDataBaseService _dataBaseService;
+
         public CreateCredentialsCommand(IDataBaseService dataBaseService)
         {
             _name = "/addCredentials";
@@ -25,15 +25,16 @@ namespace SigneWordBotAspCore.BotCommands
 
         public override async Task Execute(Message message, TelegramBotClient client)
         {
-            var chatId = message.Chat.Id;
-
             var commandPart = message.Text.Split(' ');
-            
+
             var res = Parser.Default.ParseArguments<AddCredsOption>(commandPart)
-                .WithParsed(credentialOptions =>
-                    {
-                        _dataBaseService.CreateCredentials(message.From, credentialOptions);
-                    })
+                .WithParsed(async credentialOptions =>
+                {
+                    _dataBaseService.CreateCredentials(message.From, credentialOptions);
+                    await client.SendTextMessageAsync(message.Chat.Id,
+                        "Credentials was created",
+                        parseMode: Telegram.Bot.Types.Enums.ParseMode.Default);
+                })
                 .WithNotParsed(errors =>
                 {
                     foreach (var error in errors)
@@ -44,28 +45,18 @@ namespace SigneWordBotAspCore.BotCommands
                             Console.WriteLine(typedError.NameInfo.NameText);
                         }
                     }
-                    
                 });
-            
+
             try
             {
-#if DEBUG
-//                Console.WriteLine("Enter general password for your main basket of passwords.");
+                await client.SendTextMessageAsync(message.Chat.Id,
+                    "Enter password general password for your main basket of passwords.",
+                    parseMode: Telegram.Bot.Types.Enums.ParseMode.Default);
             }
-            finally
-            {
-            }
-#else
-                await client.SendTextMessageAsync(chatId,
-               "Enter password general password for your main basket of passwords.",
-               parseMode: Telegram.Bot.Types.Enums.ParseMode.Default);
-            }catch (Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
             }
-#endif
         }
-
-      
     }
 }
