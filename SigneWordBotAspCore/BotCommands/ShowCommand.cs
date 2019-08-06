@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using CommandLine;
 using SigneWordBotAspCore.BotCommands.Options;
+using SigneWordBotAspCore.EntitiesToTgResponse;
 using SigneWordBotAspCore.Services;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -32,8 +33,10 @@ namespace SigneWordBotAspCore.BotCommands
                     
                     //TODO: make difference text
                     await client.SendTextMessageAsync(message.Chat.Id,
-                        $@"---Credentials from default basket---",
-                        parseMode: Telegram.Bot.Types.Enums.ParseMode.Default);
+                        $@"---Credentials from basket---"
+                            +Environment.NewLine 
+                            +$"{ResponseFormatter.Default.FormatResponse(credentials)}",
+                        parseMode: Telegram.Bot.Types.Enums.ParseMode.Html);
                 })
                 .WithNotParsed(errors =>
                 {

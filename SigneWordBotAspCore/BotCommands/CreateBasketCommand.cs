@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CommandLine;
 using Microsoft.EntityFrameworkCore.Internal;
 using SigneWordBotAspCore.BotCommands.Options;
+using SigneWordBotAspCore.EntitiesToTgResponse;
 using SigneWordBotAspCore.Exceptions;
 using SigneWordBotAspCore.Services;
 using Telegram.Bot;
@@ -52,12 +53,10 @@ namespace SigneWordBotAspCore.BotCommands
                 // ReSharper disable once PossibleMultipleEnumeration
                 if (!missingError.Any()) return;
 
-                var reqParamsMissing = $"ERROR(S):{Environment.NewLine}";
-
-                reqParamsMissing += missingError.Select(e => $"Required option {e.NameInfo.NameText} is missing.")
-                    .Join(Environment.NewLine);
-
-                await client.SendTextMessageAsync(message.Chat.Id, reqParamsMissing);
+                var reqParamsMissing = ResponseFormatter.Default.ErrorResponse(missingError);
+                
+                if (!string.IsNullOrEmpty(reqParamsMissing))
+                    await client.SendTextMessageAsync(message.Chat.Id, reqParamsMissing);
             }
 
             var res = Parser.Default.ParseArguments<Options.CreateBasketOptions>(commandPart)

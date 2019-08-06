@@ -30,10 +30,16 @@ namespace SigneWordBotAspCore.BotCommands
             var res = Parser.Default.ParseArguments<AddCredsOption>(commandPart)
                 .WithParsed(async credentialOptions =>
                 {
-                    _dataBaseService.CreateCredentials(message.From, credentialOptions);
-                    await client.SendTextMessageAsync(message.Chat.Id,
-                        "Credentials was created",
-                        parseMode: Telegram.Bot.Types.Enums.ParseMode.Default);
+                    var result =_dataBaseService.CreateCredentials(message.From, credentialOptions);
+                    
+                    if (result != -1)
+                        await client.SendTextMessageAsync(message.Chat.Id,
+                            "Credentials was created",
+                            parseMode: Telegram.Bot.Types.Enums.ParseMode.Default);
+                    else
+                    {
+                        await client.SendTextMessageAsync(message.Chat.Id, "чот сломалось");
+                    }
                 })
                 .WithNotParsed(errors =>
                 {
@@ -47,16 +53,7 @@ namespace SigneWordBotAspCore.BotCommands
                     }
                 });
 
-            try
-            {
-                await client.SendTextMessageAsync(message.Chat.Id,
-                    "Enter password general password for your main basket of passwords.",
-                    parseMode: Telegram.Bot.Types.Enums.ParseMode.Default);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+            
         }
     }
 }

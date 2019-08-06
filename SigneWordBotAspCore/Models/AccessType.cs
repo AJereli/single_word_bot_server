@@ -6,4 +6,12 @@ namespace SigneWordBotAspCore.Models
         SharedRead,
         SharedReadWrite
     }
+
+    public static class AccessTypeMethods
+    {
+        public static int ToInt(this AccessType at)
+        {
+            return (int) at;
+        }
+    }
 }

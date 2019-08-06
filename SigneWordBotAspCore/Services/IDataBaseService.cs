@@ -17,5 +17,6 @@ namespace SigneWordBotAspCore.Services
         int CreateBasket(long userId, string name, string basketPass = null, string description = null);
         int CreateCredentials(TgUser tgUser, AddCredsOption credsOption);
         IEnumerable<CredentialsModel> GetCredentials(TgUser user, ShowCredentialOptions credentialOptions);
+        ShareResult ShareBasket(TgUser user, ShareOptions shareOptions);
     }
 }
