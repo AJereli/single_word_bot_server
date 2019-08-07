@@ -4,5 +4,6 @@ namespace SigneWordBotAspCore.Models
     {
         public bool IsSuccess { get; set; }
         public long SharedUserTgId { get; set; }
+        
     }
 }

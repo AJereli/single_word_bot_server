@@ -28,4 +28,10 @@
     <Compile Remove="BotCommands\IBotSqlCommand.cs" />
     <Compile Remove="BotCommands\ICreateCredentials.cs" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="bot_token.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

@@ -69,9 +69,13 @@ namespace SigneWordBotAspCore.Services
         {
             int result = -1;
             long tgId = -1;
-
+            UserModel sharedUserTgId = null;
             var isConnOpenByMe = TryOpenConnection();
 
+
+            var userName = shareOptions.UserName[0].Equals('@')
+                ? shareOptions.UserName.Substring(1, shareOptions.UserName.Length)
+                : shareOptions.UserName;
             
             
             using (var transaction = _connection.BeginTransaction())
@@ -80,27 +84,45 @@ namespace SigneWordBotAspCore.Services
                 {
                     
                     const string basketIdQuery = @"SELECT ub.basket_id FROM passwords_basket pb 
-    JOIN user_basket ub ON pb.id = ub.basket_id
-    JOIN public.'user' u ON u.id = ub.user_id WHERE u.tg_id = @tg_id AND pb.name = @basketName LIMIT 1;";
+                                                        JOIN user_basket ub ON pb.id = ub.basket_id
+                                                        JOIN public.user u ON u.id = ub.user_id WHERE u.tg_id = @tg_id AND LOWER(pb.name) = @basketName LIMIT 1;";
 
+                    
+                    
                     NpgsqlParameter[] basketIdParams =
                     {
                         new NpgsqlParameter<long>("tg_id", user.Id),
-                        new NpgsqlParameter<string>("basketName", shareOptions.Name),
+                        new NpgsqlParameter<string>("basketName", shareOptions.Name.ToLower()),
                     };
 
                     var basketId = SelectOne<int>(basketIdQuery, basketIdParams, transaction);
+
+                    if (basketId == -1)
+                    {
+                        throw new ShareException {ExceptionType = ShareExceptionType.NoBasket};
+                    }
+
+                    const string userTgIdQuery = "SELECT * FROM public.user AS u WHERE LOWER(u.tg_username) = @userName;";
+                    var userTgIdQueryParams = new NpgsqlParameter[]
+                    {
+                        new NpgsqlParameter<string>("userName", userName.ToLower())
+                    };
+                    sharedUserTgId = SelectOne<UserModel>(userTgIdQuery, userTgIdQueryParams, transaction);
                     
-                    
+                    if (sharedUserTgId == null)
+                    {
+                        throw new ShareException {ExceptionType = ShareExceptionType.NoUser};
+                    }
                     
                     const string insertQuery = @"INSERT INTO user_basket AS ub (user_id, basket_id, access_type_id) 
                                     VALUES 
-                                    ((SELECT id FROM public.user AS u WHERE u.tg_username = @userName LIMIT 1),
+                                    (@shareUserTgId,
                                     @basketId,
                                     @accessType) RETURNING id;";
                                         
                     NpgsqlParameter[] insertQueryParams =
                     {
+                        new NpgsqlParameter<long>("shareUserTgId", sharedUserTgId.Id), 
                         new NpgsqlParameter<int>("basketId", basketId),
                         new NpgsqlParameter<string>("userName", shareOptions.UserName),
                         new NpgsqlParameter<int>("accessType", 
@@ -111,6 +133,9 @@ namespace SigneWordBotAspCore.Services
                     result = Insert(insertQuery, insertQueryParams, transaction);
 
 
+                    transaction.Commit();
+                    
+                    
 
                 }
                 catch (Exception ex)
@@ -127,10 +152,10 @@ namespace SigneWordBotAspCore.Services
             var sharedResult = new ShareResult();
 
 
-            if (result != -1)
+            if (result != -1 && sharedUserTgId != null)
             {
                 sharedResult.IsSuccess = true;
-//                sharedResult.SharedUserTgId 
+                sharedResult.SharedUserTgId = sharedUserTgId.TelegramId;
             }
             return sharedResult;
         }

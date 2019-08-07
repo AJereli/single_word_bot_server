@@ -20,6 +20,9 @@ namespace SigneWordBotAspCore.BotCommands
         {
             _name = "/addCredentials";
             _dataBaseService = dataBaseService;
+            
+//            CommandLine.Par
+            
             // _nextState = UserNextState.WaitCredentials;
         }
 

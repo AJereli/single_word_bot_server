@@ -21,7 +21,7 @@ namespace SigneWordBotAspCore.Services
             
             Commands = new List<AbstractBotCommand> {
                 new StartCommand(),
-                new HelpCommand(),
+                new HelpCommand(this),
                 new CreateCredentialsCommand(dataBaseService),
                 new EnterCredentialsCommand(dataBaseService),
                 new EnterPasswordCommand(dataBaseService),
