@@ -12,6 +12,10 @@ namespace SigneWordBotAspCore.BotCommands.Options
         [Option('u', "user", Required = true)]
         public string UserName { get; set; }
         
+        
+        [Option('r', "remove", Required = false, HelpText = "Remove any access from basket")]
+        public bool IsRemove { get; set; }
+        
         [Option('w',"write", Required = false)]
         public bool WritePermission { get; set; }
     }

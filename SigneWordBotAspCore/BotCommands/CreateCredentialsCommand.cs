@@ -5,6 +5,7 @@ using CommandLine.Text;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using SigneWordBotAspCore.BotCommands.Options;
+using SigneWordBotAspCore.Exceptions;
 using SigneWordBotAspCore.Services;
 using SigneWordBotAspCore.States;
 using Telegram.Bot;
@@ -20,9 +21,9 @@ namespace SigneWordBotAspCore.BotCommands
         {
             _name = "/addCredentials";
             _dataBaseService = dataBaseService;
-            
+
 //            CommandLine.Par
-            
+
             // _nextState = UserNextState.WaitCredentials;
         }
 
@@ -33,15 +34,25 @@ namespace SigneWordBotAspCore.BotCommands
             var res = Parser.Default.ParseArguments<AddCredsOption>(commandPart)
                 .WithParsed(async credentialOptions =>
                 {
-                    var result =_dataBaseService.CreateCredentials(message.From, credentialOptions);
-                    
-                    if (result != -1)
-                        await client.SendTextMessageAsync(message.Chat.Id,
-                            "Credentials was created",
-                            parseMode: Telegram.Bot.Types.Enums.ParseMode.Default);
-                    else
+                    var responseMessage = "чот сломалось";
+
+                    try
                     {
-                        await client.SendTextMessageAsync(message.Chat.Id, "чот сломалось");
+                        var result = _dataBaseService.CreateCredentials(message.From, credentialOptions);
+                        if (result != -1)
+                        {
+                            responseMessage = "Credentials was created";
+                        }
+                    }
+                    catch (BasketAlreadyExistException e)
+                    {
+                        responseMessage = e.Message;
+                    }
+                    finally
+                    {
+                        await client.SendTextMessageAsync(message.Chat.Id,
+                            responseMessage,
+                            parseMode: Telegram.Bot.Types.Enums.ParseMode.Default);
                     }
                 })
                 .WithNotParsed(errors =>
@@ -55,8 +66,6 @@ namespace SigneWordBotAspCore.BotCommands
                         }
                     }
                 });
-
-            
         }
     }
 }

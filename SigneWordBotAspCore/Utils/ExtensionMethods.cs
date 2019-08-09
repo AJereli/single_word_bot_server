@@ -16,8 +16,14 @@ namespace SigneWordBotAspCore.Utils
                 return c.ToString();
             })).ToLower();
         }
-        
-        
+
+
+        public static string CheckAndRemove(this string str, char c, int position = 0)
+        {
+            return str[position].Equals(c)
+                ? str.Remove(position, 1)
+                : str;
+        }
         
     }
 }

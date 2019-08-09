@@ -4,8 +4,10 @@ namespace SigneWordBotAspCore.Exceptions
 {
     public enum ShareExceptionType
     {
+        Other,
         NoBasket,
-        NoUser
+        NoUser,
+        NoAccess
     }
     public class ShareException: Exception
     {
