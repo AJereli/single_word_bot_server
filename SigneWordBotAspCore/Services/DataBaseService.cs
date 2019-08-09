@@ -344,7 +344,7 @@ namespace SigneWordBotAspCore.Services
         }
 
 
-        private IEnumerable<T> SelectMany<T>(string query, IEnumerable<NpgsqlParameter> sqlParams,
+        public IEnumerable<T> SelectMany<T>(string query, IEnumerable<NpgsqlParameter> sqlParams = null,
             NpgsqlTransaction transaction = null)
         {
             IList<T> res = new List<T>();
@@ -453,45 +453,10 @@ namespace SigneWordBotAspCore.Services
         }
 
 
-        public List<UserModel> GetUsers()
-        {
-            var users = new List<UserModel>();
-
-            var query = "SELECT id, tg_id FROM public.user;";
-
-            try
-            {
-                _connection.Open();
-                using (var command = new NpgsqlCommand(query, _connection))
-                {
-                    using (var dataReader = command.ExecuteReader())
-                    {
-                        while (dataReader.Read())
-                        {
-                            var user = dataReader.ConvertToObject<UserModel>();
-                            users.Add(user);
-                        }
-                    }
-                }
-            }
-            catch (NpgsqlException npgEx)
-            {
-                Console.WriteLine(npgEx);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-            }
-            finally
-            {
-                _connection.Close();
-            }
-
-            return users;
-        }
+  
 
 //TODO: Merge it to SelectOne<T>
-        private IDictionary<string, object> SelectOneRaw(string query,
+        public IDictionary<string, object> SelectOneRaw(string query,
             IEnumerable<NpgsqlParameter> parameters = null,
             NpgsqlTransaction transaction = null)
         {
@@ -531,7 +496,7 @@ namespace SigneWordBotAspCore.Services
             return res;
         }
 
-        private T SelectOne<T>(string query,
+        public T SelectOne<T>(string query,
             IEnumerable<NpgsqlParameter> parameters = null,
             NpgsqlTransaction transaction = null)
         {

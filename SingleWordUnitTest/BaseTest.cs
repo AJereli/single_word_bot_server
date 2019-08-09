@@ -11,7 +11,7 @@ namespace SingleWordUnitTest
 {
     public abstract class BaseTest
     {
-        protected readonly IDataBaseService DataBaseService;
+        protected readonly DataBaseService DataBaseService;
         protected readonly Context.AppContext AppContext;
         protected readonly IBotService BotService;
         protected readonly ICommandsService CommandsService;

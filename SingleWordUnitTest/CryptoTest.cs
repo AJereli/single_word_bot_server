@@ -15,7 +15,6 @@ namespace SingleWordUnitTest
             _output = output;
         }
         
-        [Fact]
         public void EncryptTest()
         {
             var strForCrypting = "qwdasvotewf!!2123asdvFDFf'жжжуйxX2";

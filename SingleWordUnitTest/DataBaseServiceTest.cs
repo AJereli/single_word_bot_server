@@ -2,9 +2,11 @@ using System;
 using System.Linq;
 
 using Newtonsoft.Json;
+using SigneWordBotAspCore.Models;
 using SigneWordBotAspCore.Services;
 using Telegram.Bot.Types;
 using Xunit;
+using Xunit.Abstractions;
 using Context = SigneWordBotAspCore.Services;
 
 namespace SingleWordUnitTest
@@ -12,7 +14,12 @@ namespace SingleWordUnitTest
     public sealed class DataBaseServiceTest: BaseTest
     {
         
-        
+        private readonly ITestOutputHelper _output;
+
+        public DataBaseServiceTest(ITestOutputHelper output)
+        {
+            _output = output;
+        }
         
         
         [Fact]
@@ -63,6 +70,39 @@ namespace SingleWordUnitTest
 
             var withDesc = DataBaseService.CreateBasket(update.Message.From, "WithDescr2", "pass", "DESCRIPTION HAHAH");
             Assert.NotEqual(-1, withDesc);
+        }
+
+
+        [Fact]
+        public void SeleOne()
+        {
+            var result = DataBaseService.SelectOne<UserModel>("SELECT * FROM public.user LIMIT 1");
+            
+            Assert.NotNull(result);
+            
+            _output.WriteLine(result.ToString());
+        }
+        
+        [Fact]
+        public void SeleOneRaw()
+        {
+            var result = DataBaseService.SelectOneRaw("SELECT * FROM public.user LIMIT 1");
+            
+            Assert.NotNull(result);
+            Assert.True(result.Count > 1);
+            _output.WriteLine(result.ToString());
+
+        }
+
+        [Fact]
+        public void SelectMany()
+        {
+            var result = DataBaseService.SelectMany<UserModel>("Select * FROM public.user");
+            
+            Assert.NotNull(result);
+            Assert.True(result.Count() > 1);
+            _output.WriteLine(result.ToString());
+
         }
     }
 }
