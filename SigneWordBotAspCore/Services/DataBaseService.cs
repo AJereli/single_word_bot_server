@@ -13,16 +13,10 @@ using TgUser = Telegram.Bot.Types.User;
 
 namespace SigneWordBotAspCore.Services
 {
-    public class DataBaseService : IDataBaseService
+    public class DataBaseService : BaseDataBaseService, IDataBaseService
     {
-        // ReSharper disable once NotAccessedField.Local
-        private readonly IAppContext _appContext;
-        private readonly NpgsqlConnection _connection;
-
-        public DataBaseService(IAppContext appContext)
+        public DataBaseService(IAppContext appContext) : base(appContext)
         {
-            _appContext = appContext;
-            _connection = new NpgsqlConnection(appContext.DBConnectionString);
         }
 
 
@@ -65,7 +59,6 @@ namespace SigneWordBotAspCore.Services
 
             if ((int) basketInfo["access_type_id"] != (int) AccessType.Owner)
                 return new ShareException {ExceptionType = ShareExceptionType.NoAccess};
-
 
             if (shareUser == null)
             {
@@ -344,58 +337,6 @@ namespace SigneWordBotAspCore.Services
         }
 
 
-        public IEnumerable<T> SelectMany<T>(string query, IEnumerable<NpgsqlParameter> sqlParams = null,
-            NpgsqlTransaction transaction = null)
-        {
-            IList<T> res = new List<T>();
-
-            var connectionOpenedByMe = false;
-            try
-            {
-                connectionOpenedByMe = TryOpenConnection();
-
-
-                using (var command = new NpgsqlCommand(query, _connection))
-                {
-                    if (sqlParams != null)
-                    {
-                        command.Parameters.AddRange(sqlParams.ToArray());
-                    }
-
-                    using (var dataReader = command.ExecuteReader())
-                    {
-                        while (dataReader.Read())
-                        {
-                            var t = dataReader.ConvertToObject<T>();
-                            res.Add(t);
-                        }
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                transaction?.Rollback();
-            }
-            finally
-            {
-                if (connectionOpenedByMe)
-                    _connection.Close();
-            }
-
-            return res;
-        }
-
-        private int GetUserId(string name, NpgsqlTransaction transaction = null)
-        {
-            const string query = "SELECT id FROM public.user AS u WHERE u.tg_username = @user;";
-            NpgsqlParameter[] sqlParams =
-            {
-                new NpgsqlParameter<string>("user", name),
-            };
-            return SelectOne<int>(query, sqlParams, transaction);
-        }
-
-
         private int GetUserId(long telegramId)
         {
             const string query = "SELECT id FROM public.user WHERE tg_id = @tg_id LIMIT 1;";
@@ -452,136 +393,5 @@ namespace SigneWordBotAspCore.Services
             return SelectOne<bool>(query, sqlParams);
         }
 
-
-  
-
-//TODO: Merge it to SelectOne<T>
-        public IDictionary<string, object> SelectOneRaw(string query,
-            IEnumerable<NpgsqlParameter> parameters = null,
-            NpgsqlTransaction transaction = null)
-        {
-            var res = new Dictionary<string, object>();
-
-            var connectionIsOpenedByMe = false;
-
-            try
-            {
-                connectionIsOpenedByMe = TryOpenConnection();
-                using (var command = new NpgsqlCommand(query, _connection, transaction))
-                {
-                    if (parameters != null)
-                        command.Parameters.AddRange(parameters.ToArray());
-
-                    using (var dataReader = command.ExecuteReader())
-                    {
-                        if (dataReader.HasRows)
-                        {
-                            dataReader.Read();
-                            res = Enumerable.Range(0, dataReader.FieldCount)
-                                .ToDictionary(dataReader.GetName, dataReader.GetValue);
-                        }
-                    }
-                }
-            }
-            catch (NpgsqlException npgEx)
-            {
-                Console.WriteLine(npgEx);
-            }
-            finally
-            {
-                if (connectionIsOpenedByMe)
-                    _connection.Close();
-            }
-
-            return res;
-        }
-
-        public T SelectOne<T>(string query,
-            IEnumerable<NpgsqlParameter> parameters = null,
-            NpgsqlTransaction transaction = null)
-        {
-            var res = default(T);
-
-            var connectionIsOpenedByMe = false;
-
-            try
-            {
-                connectionIsOpenedByMe = TryOpenConnection();
-                using (var command = new NpgsqlCommand(query, _connection, transaction))
-                {
-                    if (parameters != null)
-                        command.Parameters.AddRange(parameters.ToArray());
-
-                    using (var dataReader = command.ExecuteReader())
-                    {
-                        if (dataReader.HasRows)
-                        {
-                            dataReader.Read();
-                            var readResult = dataReader.ConvertToObject<T>();
-
-                            res = readResult;
-                        }
-                    }
-                }
-            }
-            catch (NpgsqlException npgEx)
-            {
-                res = default(T);
-                Console.WriteLine(npgEx);
-            }
-            finally
-            {
-                if (connectionIsOpenedByMe)
-                    _connection.Close();
-            }
-
-            return res;
-        }
-
-
-        private int Insert(string query,
-            IEnumerable<NpgsqlParameter> parameters = null,
-            NpgsqlTransaction transaction = null)
-        {
-            var res = -1;
-            var connectionIsOpenedByMe = false;
-            try
-            {
-                connectionIsOpenedByMe = TryOpenConnection();
-                using (var command = new NpgsqlCommand(query, _connection, transaction))
-                {
-                    if (parameters != null)
-                        command.Parameters.AddRange(parameters.ToArray());
-
-                    var rawResult = command.ExecuteScalar();
-                    if (rawResult is int result)
-                        res = result;
-                }
-            }
-            catch (NpgsqlException npgEx)
-            {
-                Console.WriteLine(npgEx);
-            }
-            finally
-            {
-                if (connectionIsOpenedByMe)
-                    _connection.Close();
-            }
-
-            return res;
-        }
-
-        private bool TryOpenConnection()
-        {
-            try
-            {
-                _connection.Open();
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
     }
 }

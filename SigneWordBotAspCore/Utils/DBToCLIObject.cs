@@ -1,54 +1,101 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using FastMember;
 using Npgsql;
 using NpgsqlTypes;
 using static System.Activator;
+
 namespace SigneWordBotAspCore.Utils
 {
     internal static class NpgsqlDataReaderExtentions
     {
-        public static T ConvertToObject<T>(this NpgsqlDataReader rd) 
+        public static T ConverToObject<T>(this IDictionary<string, object> dict)
         {
-            Type type = typeof(T);
+            var type = typeof(T);
             var accessor = TypeAccessor.Create(type);
             var members = accessor.GetMembers();
 
-//            var c = typeof(T).GetConstructor();
             dynamic t = CreateInstance(typeof(T));
             
-
-            for (int i = 0; i < rd.FieldCount; i++)
+            
+            foreach (var (key, value) in dict)
             {
-                if (!rd.IsDBNull(i))
+                if (value == null) continue;
+                
+                var firstMember = members.FirstOrDefault(m =>
                 {
-                    var fieldName = rd.GetName(i);
+                    var propertyName =
+                        m.GetAttribute(typeof(PgNameAttribute), false) is PgNameAttribute propertyAttr
+                            ? propertyAttr.PgName
+                            : m.Name.ToSnakeCase();
 
-                    var firstMember = members.FirstOrDefault(m => {
-                        var propertyName = m.GetAttribute(typeof(PgNameAttribute), false) is PgNameAttribute propertyAttr ? propertyAttr.PgName : m.Name.ToSnakeCase();
+                    return string.Equals(key, propertyName, StringComparison.OrdinalIgnoreCase);
+                });
+                if (firstMember != null)
+                {
+                    try
+                    {
+                        accessor[t, firstMember.Name] = value;
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                    }
+                }
+                else if (typeof(T).IsValueType)
+                {
+                    t = (T) value;
+                }
+            }
 
-                        return string.Equals(fieldName, propertyName, StringComparison.OrdinalIgnoreCase);
-                    });
-                    if (firstMember != null)
+
+            return t;
+        }
+
+        public static T ConvertToObject<T>(this NpgsqlDataReader rd)
+        {
+            var type = typeof(T);
+            var accessor = TypeAccessor.Create(type);
+            var members = accessor.GetMembers();
+
+            dynamic t = CreateInstance(typeof(T));
+
+
+            for (var i = 0; i < rd.FieldCount; i++)
+            {
+                if (rd.IsDBNull(i)) continue;
+                
+                var fieldName = rd.GetName(i);
+
+                var firstMember = members.FirstOrDefault(m =>
+                {
+                    var propertyName =
+                        m.GetAttribute(typeof(PgNameAttribute), false) is PgNameAttribute propertyAttr
+                            ? propertyAttr.PgName
+                            : m.Name.ToSnakeCase();
+
+                    return string.Equals(fieldName, propertyName, StringComparison.OrdinalIgnoreCase);
+                });
+                if (firstMember != null)
+                {
+                    try
                     {
-                        try
-                        {
-                            accessor[t, firstMember.Name] = rd.GetValue(i);
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex);
-                        }
+                        accessor[t, firstMember.Name] = rd.GetValue(i);
                     }
-                    else if (typeof(T).IsValueType)
+                    catch (Exception ex)
                     {
-                        t = (T)rd.GetValue(i);
+                        Console.WriteLine(ex);
                     }
+                }
+                else if (typeof(T).IsValueType)
+                {
+                    t = (T) rd.GetValue(i);
                 }
             }
 
             return t;
         }
     }
-
 }

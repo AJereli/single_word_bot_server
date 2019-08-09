@@ -24,7 +24,7 @@ namespace SingleWordUnitTest
             AppContext = new Context.AppContext();
             DataBaseService = new DataBaseService(AppContext);
             CommandsService = new CommandsService(DataBaseService);
-            BotService = new BotService(AppContext);
+//            BotService = new BotService(AppContext);
             UpdateService = new UpdateService(BotService, null, CommandsService);
             UpdateController = new UpdateController(UpdateService);
             
