@@ -51,6 +51,8 @@ namespace SigneWordBotAspCore.Services
             if (basketInfo == null)
                 return new ShareException {ExceptionType = ShareExceptionType.Other};
 
+            if (shareUser == null)
+                return new ShareException {ExceptionType = ShareExceptionType.NoUser};
 
             var basketId = (int) basketInfo["basket_id"];
 
@@ -70,7 +72,60 @@ namespace SigneWordBotAspCore.Services
 
         public bool UnShareBasket(TgUser user, ShareOptions shareOptions)
         {
-            return false;
+            var basketInfo = GetBasketInfo(user.Id, shareOptions.Name);
+            var userInfo = GetUser(user.Username); 
+            var sharedUser = GetUser(shareOptions.UserName);
+            
+            var shareException = IsSharingPossible(basketInfo, userInfo);
+            
+            if (shareException != null)
+                throw shareException;
+
+
+            const string query = @"DELETE FROM public.user_basket 
+                                    WHERE user_id = @userId AND basket_id = @basketId";
+           
+            NpgsqlParameter[] sqlParams =
+            {
+                new NpgsqlParameter<int>("userId", sharedUser.Id),
+                new NpgsqlParameter<int>("basketId", (int)basketInfo["basket_id"]),
+            };
+            
+            
+            var result = DeleteUpdate(query, sqlParams) == 1;
+            
+
+            return result;
+
+        }
+
+        private IDictionary<string, object> GetBasketInfo(long userId, string basketName, NpgsqlTransaction transaction = null)
+        {
+            
+            const string basketIdQuery =
+                @"SELECT ub.basket_id AS basket_id, access_type_id FROM passwords_basket pb 
+                                                        JOIN user_basket ub ON pb.id = ub.basket_id
+                                                        JOIN public.user u ON u.id = ub.user_id WHERE u.tg_id = @tg_id AND LOWER(pb.name) = @basketName LIMIT 1;";
+
+            NpgsqlParameter[] basketIdParams =
+            {
+                new NpgsqlParameter<long>("tg_id", userId),
+                new NpgsqlParameter<string>("basketName", basketName.ToLower()),
+            };
+
+            return SelectOneRaw(basketIdQuery, basketIdParams, transaction);
+        }
+
+        private UserModel GetUser(string tgName, NpgsqlTransaction transaction = null)
+        {
+            const string userTgIdQuery =
+                "SELECT * FROM public.user AS u WHERE LOWER(u.tg_username) = @userName;";
+            var userTgIdQueryParams = new NpgsqlParameter[]
+            {
+                new NpgsqlParameter<string>("userName", tgName)
+            };
+
+            return SelectOne<UserModel>(userTgIdQuery, userTgIdQueryParams, transaction);
         }
         
         public ShareResult ShareBasket(TgUser user, ShareOptions shareOptions)
@@ -83,28 +138,9 @@ namespace SigneWordBotAspCore.Services
             {
                 try
                 {
-                    const string basketIdQuery =
-                        @"SELECT ub.basket_id AS basket_id, access_type_id FROM passwords_basket pb 
-                                                        JOIN user_basket ub ON pb.id = ub.basket_id
-                                                        JOIN public.user u ON u.id = ub.user_id WHERE u.tg_id = @tg_id AND LOWER(pb.name) = @basketName LIMIT 1;";
 
-                    NpgsqlParameter[] basketIdParams =
-                    {
-                        new NpgsqlParameter<long>("tg_id", user.Id),
-                        new NpgsqlParameter<string>("basketName", shareOptions.Name.ToLower()),
-                    };
-
-                    var basketInfo = SelectOneRaw(basketIdQuery, basketIdParams, transaction);
-
-
-                    const string userTgIdQuery =
-                        "SELECT * FROM public.user AS u WHERE LOWER(u.tg_username) = @userName;";
-                    var userTgIdQueryParams = new NpgsqlParameter[]
-                    {
-                        new NpgsqlParameter<string>("userName", shareOptions.UserName)
-                    };
-
-                    sharedUser = SelectOne<UserModel>(userTgIdQuery, userTgIdQueryParams, transaction);
+                    var basketInfo = GetBasketInfo(user.Id, shareOptions.Name, transaction);
+                    sharedUser = GetUser(shareOptions.UserName, transaction);
 
                     var checkException = IsSharingPossible(basketInfo, sharedUser);
                     if (checkException != null) throw checkException;

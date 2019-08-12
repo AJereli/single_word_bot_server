@@ -64,8 +64,8 @@ namespace SigneWordBotAspCore.Services
             IEnumerable<NpgsqlParameter> parameters = null,
             NpgsqlTransaction transaction = null)
         {
-            var res = new Dictionary<string, object>();
-
+            Dictionary<string, object> res = null;
+            
             var connectionIsOpenedByMe = false;
 
             try
@@ -80,6 +80,7 @@ namespace SigneWordBotAspCore.Services
                     {
                         if (dataReader.HasRows)
                         {
+                            res = new Dictionary<string, object>();
                             dataReader.Read();
                             res = Enumerable.Range(0, dataReader.FieldCount)
                                 .ToDictionary(i => dataReader.GetName(i), i =>
