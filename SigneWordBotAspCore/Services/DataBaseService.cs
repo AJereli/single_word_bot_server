@@ -61,12 +61,8 @@ namespace SigneWordBotAspCore.Services
 
             if ((int) basketInfo["access_type_id"] != (int) AccessType.Owner)
                 return new ShareException {ExceptionType = ShareExceptionType.NoAccess};
-
-            if (shareUser == null)
-            {
-                throw new ShareException {ExceptionType = ShareExceptionType.NoUser};
-            }
-
+            
+            
             return null;
         }
 

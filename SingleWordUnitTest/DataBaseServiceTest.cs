@@ -74,7 +74,7 @@ namespace SingleWordUnitTest
 
 
         [Fact]
-        public void SeleOne()
+        public void SelectOne()
         {
             var result = DataBaseService.SelectOne<UserModel>("SELECT * FROM public.user LIMIT 1");
             
@@ -84,7 +84,7 @@ namespace SingleWordUnitTest
         }
         
         [Fact]
-        public void SeleOneRaw()
+        public void SelectOneRaw()
         {
             var result = DataBaseService.SelectOneRaw("SELECT * FROM public.user LIMIT 1");
             
