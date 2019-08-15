@@ -35,6 +35,7 @@ namespace SigneWordBotAspCore.Services
         public string BotToken => _botToken;
 
 
+//dotnet ef dbcontext scaffold "Server=localhost;Port=5432;Database=signle_word_db;User Id=username;Password=;" Npgsql.EntityFrameworkCore.PostgreSQL
 
 
         public string DBConnectionString =>

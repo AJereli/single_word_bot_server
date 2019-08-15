@@ -3,7 +3,7 @@ using NpgsqlTypes;
 
 namespace SigneWordBotAspCore.Models
 {
-    public class UserModel
+    public class UserModelOld
     {
         [PgName("id")]
         public int Id { get; set; }
