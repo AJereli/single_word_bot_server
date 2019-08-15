@@ -1,4 +1,5 @@
-﻿using NpgsqlTypes;
+﻿using System.Collections.Generic;
+using NpgsqlTypes;
 
 namespace SigneWordBotAspCore.Models
 {
@@ -18,5 +19,8 @@ namespace SigneWordBotAspCore.Models
         
         [PgName("tg_username")]
         public string Username { get; set; }
+        
+        public ICollection<UserBasket> UserBaskets { get; set; }
+
     }
 }
