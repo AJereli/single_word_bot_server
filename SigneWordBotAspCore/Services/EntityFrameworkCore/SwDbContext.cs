@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Logging;
+using SigneWordBotAspCore.Services;
 
 namespace SigneWordBotAspCore
 {
@@ -9,13 +10,16 @@ namespace SigneWordBotAspCore
     
     public partial class SwDbContext : DbContext
     {
+
+        private readonly IAppContext _appContext;
         
         public static readonly Microsoft.Extensions.Logging.LoggerFactory _myLoggerFactory = 
             new LoggerFactory(new[] { 
                 new Microsoft.Extensions.Logging.Debug.DebugLoggerProvider() 
             });
-        public SwDbContext()
+        public SwDbContext(IAppContext appContext)
         {
+            _appContext = appContext;
         }
 
         public SwDbContext(DbContextOptions<SwDbContext> options)
@@ -36,8 +40,7 @@ namespace SigneWordBotAspCore
 
             if (!optionsBuilder.IsConfigured)
             {
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
-                optionsBuilder.UseNpgsql("Server=localhost;Port=5432;Database=signle_word_db;User Id=username;Password=;");
+                optionsBuilder.UseNpgsql(_appContext.DBConnectionString);
             }
         }
 

@@ -34,29 +34,29 @@ namespace SigneWordBotAspCore.EntitiesToTgResponse
         
         public string FormatResponse(IEnumerable<CredentialsModel> c)
         {
-            throw new NotImplementedException();
-//            if (c == null) throw new ArgumentNullException(nameof(c));
-//
-//            const string offset = "---";
-//            
-//            var praperedStrings = new List<string>();
-//            
-////            var title = $"{offset}|Title|{offset}|Login|{offset}|Password|{offset}";
-//
-//            var title = @"<pre>    Title   |  Login  |  Password
-//  -------- | -------- | ---------|";
-//
-//            var grouped = c;
-//            foreach (var g in grouped)
-//            {
-//                praperedStrings.Add($"Basket: <b>{g.Key}</b>\n");
-//                praperedStrings.Add(title);
-//                praperedStrings.Add(g.Select(s => $"  {s.Name}  | {s.Login} | {s.UnitPassword}")
-//                                    .Join(Environment.NewLine));
-//                praperedStrings.Add("</pre>");
-//
-//            }
-//            return praperedStrings.Join(Environment.NewLine);
+            if (c == null) throw new ArgumentNullException(nameof(c));
+
+            const string offset = "---";
+            
+            var praperedStrings = new List<string>();
+            
+//            var title = $"{offset}|Title|{offset}|Login|{offset}|Password|{offset}";
+
+            var title = @"<pre>    Title   |  Login  |  Password
+  -------- | -------- | ---------|";
+
+            var grouped = c.GroupBy(cred => cred.BasketModelPass.Name);
+            
+            foreach (var g in grouped)
+            {
+                praperedStrings.Add($"Basket: <b>{g.Key}</b>\n");
+                praperedStrings.Add(title);
+                praperedStrings.Add(g.Select(s => $"  {s.Name}  | {s.Login} | {s.UnitPassword}")
+                                    .Join(Environment.NewLine));
+                praperedStrings.Add("</pre>");
+
+            }
+            return praperedStrings.Join(Environment.NewLine);
 
         }
         

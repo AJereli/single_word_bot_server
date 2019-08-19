@@ -20,20 +20,19 @@ namespace SigneWordBotAspCore.Services
         
         public DataBaseService(IAppContext appContext)
         {
+            _appContext = appContext;
             GetUsers();
         }
 
         public void GetUsers()
         {
-            using (var db = new SwDbContext())
-            {
-
-            }
+           
+            
         }
         
         public int CreateUser(User tgUser, string password)
         {
-            using (var db = new SwDbContext())
+            using (var db = new SwDbContext(_appContext))
             {
                 if (db.User.Any(u => u.TgId == tgUser.Id))
                     return -1;
@@ -54,7 +53,7 @@ namespace SigneWordBotAspCore.Services
 
         public int CreateBasket(User user, string name, string basketPass = null, string description = null)
         {
-            using (var context = new SwDbContext())
+            using (var context = new SwDbContext(_appContext))
             {
                 var currentUser = context.User.FirstOrDefault(u => u.TgId == user.Id);
 
@@ -90,7 +89,7 @@ namespace SigneWordBotAspCore.Services
 
         public int CreateBasket(long userId, string name, string basketPass = null, string description = null)
         {
-            using (var context = new SwDbContext())
+            using (var context = new SwDbContext(_appContext))
             {
                 var currentUser = context.User.FirstOrDefault(u => u.Id == userId);
 
@@ -125,7 +124,36 @@ namespace SigneWordBotAspCore.Services
 
         public int CreateCredentials(User tgUser, AddCredsOption credsOption)
         {
-            throw new NotImplementedException();
+            var basketName = credsOption.Basket ?? "default";
+            using (var context = new SwDbContext(_appContext))
+            {
+                var user = context.User.FirstOrDefault(u => u.TgId == tgUser.Id);
+                
+                if (user == null)
+                    throw new UserNotFoundException();
+
+                var basket = context.UserBasket
+                    .Include(x => x.BasketModel)
+                    .FirstOrDefault(ub => ub.BasketModel.Name.ToUpper().Equals(basketName.ToUpper()) 
+                                          && ub.UserModel.TgId == user.TgId
+                                          && ub.AccessTypeId == 1);
+                
+                if (basket == null)
+                    throw new BasketOperationNotAllowed();
+
+                var res = context.Credentials.Add(new CredentialsModel
+                {
+                    UnitPassword = credsOption.Password,
+                    Name = credsOption.Title, 
+                    Login = credsOption.Login,
+                    BasketPassId = basket.BasketId
+                    
+                });
+
+                context.SaveChanges();
+                
+                return res.Entity.Id;
+            }
         }
 
         public bool UnShareBasket(User user, ShareOptions shareOptions)
@@ -135,7 +163,33 @@ namespace SigneWordBotAspCore.Services
 
         public IEnumerable<CredentialsModel> GetCredentials(User user, ShowCredentialOptions credentialOptions)
         {
-            throw new NotImplementedException();
+            using (var context = new SwDbContext(_appContext))
+            {
+                var res = context.Credentials
+                    .Include(c => c.BasketModelPass)
+                    .ThenInclude(b => b.UserBasket)
+                    .ThenInclude(ub => ub.UserModel).ToList();
+                
+                if (credentialOptions.ShowAll)
+                {
+                    return res;
+
+                }
+                
+                if (!string.IsNullOrEmpty(credentialOptions.Title))
+                {
+                    return res.Where(c => c.Name.ToUpper().Equals(credentialOptions.Title.ToUpper())).ToList();
+                }
+
+                if (!string.IsNullOrEmpty(credentialOptions.Basket))
+                {
+                    return res.Where(c => c.BasketModelPass.Name.ToUpper().Equals(credentialOptions.Basket.ToUpper())).ToList();
+                }
+
+                return res.Where(c => c.BasketModelPass.Name.Equals("default")).ToList();
+                
+                
+            }
         }
 
         public ShareResult ShareBasket(User user, ShareOptions shareOptions)
