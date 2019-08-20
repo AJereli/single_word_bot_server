@@ -36,6 +36,9 @@ namespace SigneWordBotAspCore.EntitiesToTgResponse
         {
             if (c == null) throw new ArgumentNullException(nameof(c));
 
+            if (!c.Any())
+                return "No credentials was found";
+            
             const string offset = "---";
             
             var praperedStrings = new List<string>();

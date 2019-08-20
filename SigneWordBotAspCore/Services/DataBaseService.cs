@@ -14,10 +14,10 @@ using TgUser = Telegram.Bot.Types.User;
 
 namespace SigneWordBotAspCore.Services
 {
-    public class DataBaseService: IDataBaseService
+    public class DataBaseService : IDataBaseService
     {
         private readonly IAppContext _appContext;
-        
+
         public DataBaseService(IAppContext appContext)
         {
             _appContext = appContext;
@@ -26,17 +26,15 @@ namespace SigneWordBotAspCore.Services
 
         public void GetUsers()
         {
-           
-            
         }
-        
+
         public int CreateUser(User tgUser, string password)
         {
             using (var db = new SwDbContext(_appContext))
             {
                 if (db.User.Any(u => u.TgId == tgUser.Id))
                     return -1;
-                
+
                 var res = db.User.Add(new UserModel
                 {
                     TgId = tgUser.Id,
@@ -45,7 +43,7 @@ namespace SigneWordBotAspCore.Services
                     SecondName = tgUser.LastName,
                     TgUsername = tgUser.Username
                 });
-                
+
                 db.SaveChanges();
                 return res.Entity.Id;
             }
@@ -62,7 +60,7 @@ namespace SigneWordBotAspCore.Services
 
                 var isBasketExist = context.User.Include(u => u.UserBasket).ThenInclude(u => u.BasketModel)
                     .Any(u => u.UserBasket.Select(ub => ub.BasketModel).Any(b => b.Name == name));
-                
+
                 if (isBasketExist)
                     throw new BasketAlreadyExistException();
 
@@ -71,7 +69,6 @@ namespace SigneWordBotAspCore.Services
                     BasketPass = basketPass,
                     Description = description,
                     Name = name
-                    
                 });
 
                 var userBasket = context.UserBasket.Add(new UserBasket
@@ -84,7 +81,6 @@ namespace SigneWordBotAspCore.Services
 
                 return userBasket.Entity.Id;
             }
-
         }
 
         public int CreateBasket(long userId, string name, string basketPass = null, string description = null)
@@ -98,7 +94,7 @@ namespace SigneWordBotAspCore.Services
 
                 var isBasketExist = context.User.Include(u => u.UserBasket).ThenInclude(u => u.BasketModel)
                     .Any(u => u.UserBasket.Select(ub => ub.BasketModel).Any(b => b.Name == name));
-                
+
                 if (isBasketExist)
                     throw new BasketAlreadyExistException();
 
@@ -107,7 +103,6 @@ namespace SigneWordBotAspCore.Services
                     BasketPass = basketPass,
                     Description = description,
                     Name = name
-                    
                 });
 
                 var userBasket = context.UserBasket.Add(new UserBasket
@@ -128,37 +123,65 @@ namespace SigneWordBotAspCore.Services
             using (var context = new SwDbContext(_appContext))
             {
                 var user = context.User.FirstOrDefault(u => u.TgId == tgUser.Id);
-                
+
                 if (user == null)
                     throw new UserNotFoundException();
 
                 var basket = context.UserBasket
                     .Include(x => x.BasketModel)
-                    .FirstOrDefault(ub => ub.BasketModel.Name.ToUpper().Equals(basketName.ToUpper()) 
+                    .FirstOrDefault(ub => ub.BasketModel.Name.ToUpper().Equals(basketName.ToUpper())
                                           && ub.UserModel.TgId == user.TgId
                                           && ub.AccessTypeId == 1);
-                
+
                 if (basket == null)
                     throw new BasketOperationNotAllowed();
 
                 var res = context.Credentials.Add(new CredentialsModel
                 {
                     UnitPassword = credsOption.Password,
-                    Name = credsOption.Title, 
+                    Name = credsOption.Title,
                     Login = credsOption.Login,
                     BasketPassId = basket.BasketId
-                    
                 });
 
                 context.SaveChanges();
-                
+
                 return res.Entity.Id;
             }
         }
 
         public bool UnShareBasket(User user, ShareOptions shareOptions)
         {
-            throw new NotImplementedException();
+            using (var context = new SwDbContext(_appContext))
+            {
+                var basket = context.UserBasket
+                    .Include(ub => ub.BasketModel)
+                    .Include(ub => ub.UserModel)
+                    .FirstOrDefault(ub =>
+                        ub.BasketModel.Name == shareOptions.Name && ub.UserModel.TgId == user.Id);
+
+                if (basket == null)
+                    throw new ShareException {ExceptionType = ShareExceptionType.NoBasket};
+
+                if (basket.AccessTypeId != 1)
+                    throw new ShareException {ExceptionType = ShareExceptionType.NoAccess};
+
+                var userForSharing = context.User.FirstOrDefault(u => u.TgUsername == shareOptions.UserName);
+
+                if (userForSharing == null)
+                    throw new ShareException {ExceptionType = ShareExceptionType.NoUser};
+
+                var isSharedBefore = context.UserBasket.Any(ub => ub.BasketId == basket.BasketId 
+                                                                  && ub.UserId == userForSharing.Id);
+
+                var shareResult = context.UserBasket.Remove(
+                    context.UserBasket.First(ub => ub.BasketId == basket.BasketId && ub.UserId == userForSharing.Id));
+                
+                
+                context.SaveChanges();
+
+                return true;
+            }
         }
 
         public IEnumerable<CredentialsModel> GetCredentials(User user, ShowCredentialOptions credentialOptions)
@@ -169,13 +192,12 @@ namespace SigneWordBotAspCore.Services
                     .Include(c => c.BasketModelPass)
                     .ThenInclude(b => b.UserBasket)
                     .ThenInclude(ub => ub.UserModel).ToList();
-                
+
                 if (credentialOptions.ShowAll)
                 {
                     return res;
-
                 }
-                
+
                 if (!string.IsNullOrEmpty(credentialOptions.Title))
                 {
                     return res.Where(c => c.Name.ToUpper().Equals(credentialOptions.Title.ToUpper())).ToList();
@@ -183,18 +205,57 @@ namespace SigneWordBotAspCore.Services
 
                 if (!string.IsNullOrEmpty(credentialOptions.Basket))
                 {
-                    return res.Where(c => c.BasketModelPass.Name.ToUpper().Equals(credentialOptions.Basket.ToUpper())).ToList();
+                    return res.Where(c => c.BasketModelPass.Name.ToUpper().Equals(credentialOptions.Basket.ToUpper()))
+                        .ToList();
                 }
 
                 return res.Where(c => c.BasketModelPass.Name.Equals("default")).ToList();
-                
-                
             }
         }
 
         public ShareResult ShareBasket(User user, ShareOptions shareOptions)
         {
-            throw new NotImplementedException();
+            using (var context = new SwDbContext(_appContext))
+            {
+                var basket = context.UserBasket
+                    .Include(ub => ub.BasketModel)
+                    .Include(ub => ub.UserModel)
+                    .FirstOrDefault(ub =>
+                        ub.BasketModel.Name == shareOptions.Name && ub.UserModel.TgId == user.Id);
+
+                if (basket == null)
+                    throw new ShareException {ExceptionType = ShareExceptionType.NoBasket};
+
+                if (basket.AccessTypeId != 1)
+                    throw new ShareException {ExceptionType = ShareExceptionType.NoAccess};
+
+                var userForSharing = context.User.FirstOrDefault(u => u.TgUsername == shareOptions.UserName);
+
+                if (userForSharing == null)
+                    throw new ShareException {ExceptionType = ShareExceptionType.NoUser};
+
+                var isSharedBefore = context.UserBasket.Any(ub => ub.BasketId == basket.BasketId 
+                                                                  && ub.UserId == userForSharing.Id);
+
+                if (isSharedBefore)
+                    return new ShareResult {IsSuccess = false};
+                
+                var shareResult = context.UserBasket.Add(new UserBasket
+                {
+                    AccessTypeId = shareOptions.WritePermission ? 2 : 3,
+                    UserId = userForSharing.Id,
+                    BasketId = basket.BasketId
+                });
+                
+                
+                context.SaveChanges();
+
+                return new ShareResult
+                {
+                    IsSuccess = true,
+                    SharedUserTgId = userForSharing.TgId
+                };
+            }
         }
     }
 }
